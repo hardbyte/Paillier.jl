@@ -12,9 +12,9 @@ julia> decrypt(priv, add(pub, c, encrypt(pub, 20)))
 """
 module Paillier
 
-export PrivateKey, PublicKey, Ciphertext, encrypt, decrypt, add, generate_paillier_keypair
-
 using Random, Primes
+include("utilities.jl")
+export PrivateKey, PublicKey, Ciphertext, encrypt, decrypt, add, generate_paillier_keypair
 
 const Ciphertext = BigInt
 
@@ -54,7 +54,7 @@ function decrypt(priv::PrivateKey, c)
     m = mod(div(x, priv.public_key.n) * priv.m, priv.public_key.n)
 end
 
-function add(pub::PublicKey, c1, c2)
+function add(pub::PublicKey, c1::Ciphertext, c2::Ciphertext)
     return c = mod(c1 * c2, pub.n_sq)
 end
 
@@ -67,21 +67,6 @@ function multiply(pub::PublicKey, ciphertext::BigInt, plaintext::Number)
     else
         return powermod(ciphertext, plaintext, pub.n_sq)
     end
-end
-
-function n_bit_random_number(len::Number)
-    max_n = ( BigInt(1) << len ) - 1
-    if len > 2
-        min_n = BigInt(1) << (len - 1)
-        return rand(min_n:max_n)
-    end
-    return rand(1:max_n)
-end
-
-function nbit_prime_of_size(n_bits)
-    # generate a random nbit number
-    r = n_bit_random_number(n_bits)
-    return nextprime(r)
 end
 
 function generate_paillier_keypair(n_length=2048)
