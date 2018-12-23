@@ -11,7 +11,6 @@ The homomorphic properties of the paillier crypto system are:
 * Encrypted numbers can be multiplied by a non encrypted scalar.
 * Encrypted numbers can be added together.
 
-
 ## Quick Example
 
 ```julia
