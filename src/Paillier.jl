@@ -41,12 +41,12 @@ function PrivateKey(public_key::PublicKey, p::BigInt, q::BigInt, n::BigInt)
     PrivateKey(l, m, public_key)
 end
 
-function encrypt(pub::PublicKey, m)
+function encrypt(pub::PublicKey, m)::Ciphertext
     rng = RandomDevice()
     r = rand(rng, big.(2:pub.n))
     rn = powermod(r, pub.n, pub.n_sq)
     gm = mod( (pub.n * m) + 1, pub.n_sq )
-    c::Ciphertext = mod(gm * rn, pub.n_sq)
+    return mod(gm * rn, pub.n_sq)
 end
 
 function decrypt(priv::PrivateKey, c)
