@@ -14,16 +14,17 @@ The homomorphic properties of the paillier crypto system are:
 ## Quick Example
 
 ```julia
-pub, priv = generate_paillier_keypair(1024)
-c = encrypt(pub, 10)
-println(decrypt(priv, c))
-d = multiply(pub, c, 2)
-println(decrypt(priv, d))
-```
-
-```text
+julia> using Paillier
+julia> pub, priv = generate_paillier_keypair(1024)
+julia> a = encrypt(pub, 10)
+julia> b = encrypt(pub, 50)
+julia> decrypt(priv, a)
 10
-20
+julia> c = 2a + b;
+julia> typeof(c)
+EncryptedNumber
+julia> decrypt(priv, c)
+70
 ```
 
 ## More Examples
