@@ -23,4 +23,5 @@ include("keygeneration.jl")
 include("Encoding.jl")
 include("encryptedarray.jl")
 
+include("base64url/Base64URL.jl")
 end
