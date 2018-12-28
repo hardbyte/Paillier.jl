@@ -24,10 +24,16 @@ struct Encoding
     base::Int64
 end
 
+function intrep(scalar::BigFloat, n::BigInt, base::Int64, exponent::Int64)::BigInt
+    int_rep = BigInt(round(scalar * base^Float64(-exponent)))
+    max_num = BigInt(floor(n / 3))
+    if abs(int_rep) >= max_num
+        throw(DomainError("Attempt to encode unrepresentable number"))
+    end
+    return mod(int_rep, n)
+end
 
 function encode(scalar::Float64, encoding::Encoding)
-    max_num = BigInt(floor(encoding.public_key.n / 3))
-
     mantisa_digits = 53
 
     # Precision calculation
@@ -35,17 +41,9 @@ function encode(scalar::Float64, encoding::Encoding)
     bin_lsb_exponent = bin_flt_exp - mantisa_digits
     exponent = Int64(floor(bin_lsb_exponent/log2(encoding.base)))
 
-    # Todo consider if precision is given or part of the Encoding?
-    #if max_exponent
-    #exponent = floor(log(encoding.base, precision))
+    int_rep = intrep(BigFloat(scalar), encoding.public_key.n, encoding.base, exponent)
 
-    int_rep = BigInt(round(BigFloat(scalar) * encoding.base^Float64(-exponent)))
-
-    if abs(int_rep) >= max_num
-        throw(DomainError("Attempt to encode unrepresentable number"))
-    end
-
-    return mod(int_rep, encoding.public_key.n), exponent
+    return int_rep, exponent
 end
 
 function decode(encoded::BigInt, exponent::Int, encoding::Encoding)
