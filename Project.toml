@@ -3,9 +3,6 @@ uuid = "787387ca-069e-11e9-28f2-d737a1e7e69e"
 authors = ["Brian Thorne <brian@thorne.link>"]
 version = "0.1.0"
 
-[compat]
-julia = "1.0"
-
 [deps]
 Primes = "27ebfcd6-29c5-5fa9-bf4b-fb8fc14df3ae"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
