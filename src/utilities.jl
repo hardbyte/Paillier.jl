@@ -13,3 +13,8 @@ function nbit_prime_of_size(n_bits)
     r = n_bit_random_number(n_bits)
     return nextprime(r)
 end
+
+function random_lt_n(n::BigInt)
+    rng = RandomDevice()
+    return rand(rng, big.(1:n))
+end

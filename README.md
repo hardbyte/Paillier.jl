@@ -11,9 +11,15 @@ The homomorphic properties of the paillier crypto system are:
 * Encrypted numbers can be multiplied by a non encrypted scalar.
 * Encrypted numbers can be added together.
 
-## Warning
+# Warning - Here be dragons.
 
-This is rough! Don't use for anything serious yet!
+This is rough! Don't use for anything serious yet! Not reviewed by a cryptographer.
+
+In particular we don't obfuscate the results of encrypted math operations by default. This is an 
+optimization copied from python-paillier, however after any homomorphic operation - before sharing
+an `EncryptedNumber` or `EncryptedArray` you must call `obfuscate()` to secure the ciphertext. 
+
+Ideally this will occur behind the scenes at serialization time.
 
 ## Quick Example
 
@@ -24,12 +30,54 @@ julia> a = encrypt(pub, 10)
 julia> b = encrypt(pub, 50)
 julia> decrypt(priv, a)
 10
-julia> c = 2a + b;
+julia> decrypt(priv, a + 5)
+15
+julia> # obfuscate before sharing an encrypted number:
+julia> c = obfuscate(2a + b);
 julia> typeof(c)
 EncryptedNumber
 julia> decrypt(priv, c)
 70
 ```
+
+## Array Support
+
+To avoid wasting space having multiple copies of the same `PublicKey` I've added an 
+`EncryptedArray` type that shares one public key for an array of ciphertexts.
+
+```julia
+julia> a = [0,1,2,3,4,5]
+julia> enca = encrypt(publickey, a)
+julia> encb = 2 * enca
+julia> decrypt(privatekey, reduce(+, encb))
+30
+```
+
+See [encryptedarray.jl](./src/encryptedarray.jl) for implementation.
+
+### Broadcasting Support
+
+I've made some effort towards supporting multidimensional arrays:
+
+```julia
+julia> x = [[0, 1] [345, 32410] [3, 784564]]
+julia> publickey, privatekey = generate_paillier_keypair(4096)
+julia> encrypted = encrypt(publickey, x)
+julia> encrypted.public_key == publickey
+true
+julia> typeof(encrypted), size(encrypted)
+(EncryptedArray{BigInt,2}, (2, 3))
+julia> decrypt(privatekey, encrypted)
+2×3 Array{BigInt,2}:
+ 0    345       3
+ 1  32410  784564
+julia> decrypt(privatekey, [4, 2] .* encrypted .+ 100)
+2×3 Array{BigInt,2}:
+ 100   1480      112
+ 102  64920  1569228
+```
+
+However not everything works, e.g. the `LinearAlgebra.dot` function.
 
 ## More Examples
 
