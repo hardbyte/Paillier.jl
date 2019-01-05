@@ -40,11 +40,11 @@ function test_array(x, keysize)
     @test 100 .+ x == decrypt(privatekey, 100 .+ encrypted)
 
     @test all(original == decrypt(privatekey, encrypted) for (original, encrypted) in zip(x, encrypted))
-    @test typeof(encrypted[1]) == EncryptedNumber
+    @test typeof(encrypted[1]) == Encrypted
 
     enc_copy = copy(encrypted)
     @test typeof(enc_copy) <: EncryptedArray
-    @test typeof(enc_copy[1]) <: EncryptedNumber
+    @test typeof(enc_copy[1]) <: Encrypted
     @test decrypt(privatekey, enc_copy) == x
 
     encryptedslice = encrypted[1:3]

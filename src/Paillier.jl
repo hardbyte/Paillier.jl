@@ -12,7 +12,7 @@ julia> decrypt(priv, add(pub, c, encrypt(pub, 20)))
 """
 module Paillier
 
-export PrivateKey, PublicKey, EncryptedNumber, encrypt, decrypt
+export PrivateKey, PublicKey, Encrypted, encrypt, decrypt
 export generate_paillier_keypair, obfuscate
 
 using Primes, Random

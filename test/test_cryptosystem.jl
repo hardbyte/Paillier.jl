@@ -60,10 +60,6 @@ using Main.Paillier
                 encx = 2 * encx
                 @test decrypt(priv, encx) == 2^i
             end
-
         end
-
-
     end
-
 end

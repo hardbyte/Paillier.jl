@@ -58,19 +58,18 @@ function +(enc_a::EncryptedArray, enc_b::EncryptedArray)
 end
 
 """
-Iterating over an EncryptedArray should give EncryptedNumbers and not the
+Iterating over an EncryptedArray should give Encrypted objects and not the
 raw Ciphertext.
-
 """
 function Base.iterate(enc::EncryptedArray, state=1)
     if state > length(enc.ciphertexts)
         return nothing
     else
-        return EncryptedNumber(enc.ciphertexts[state], enc.public_key), state+1
+        return Encrypted(enc.ciphertexts[state], enc.public_key), state+1
     end
 end
 
-Base.eltype(::Type{EncryptedArray}) = EncryptedNumber
+Base.eltype(::Type{EncryptedArray}) = Encrypted
 Base.length(x::EncryptedArray) = length(x.ciphertexts)
 Base.size(x::EncryptedArray) = size(x.ciphertexts)
 Base.showarg(io::IO, A::EncryptedArray, toplevel) = print(io, typeof(A), " with public key '", A.public_key, "'")
@@ -79,16 +78,16 @@ Base.BroadcastStyle(::Type{<:EncryptedArray}) = Broadcast.ArrayStyle{EncryptedAr
 function Base.getindex(A::EncryptedArray, i::T) where {T}
     indexed = getindex(A.ciphertexts, i::T)
     if typeof(indexed) == Ciphertext
-        return EncryptedNumber(indexed, A.public_key)
+        return Encrypted(indexed, A.public_key)
     else
         return EncryptedArray(indexed, A.public_key)
     end
 end
 
-function Base.setindex!(A::EncryptedArray{T,N}, val::EncryptedNumber, inds) where {T,N}
+function Base.setindex!(A::EncryptedArray{T,N}, val::Encrypted, inds) where {T,N}
     setindex!(A.ciphertexts, val.ciphertext, inds)
 end
-Base.convert(::Type{Ciphertext}, enc::EncryptedNumber) = enc.ciphertext
+Base.convert(::Type{Ciphertext}, enc::Encrypted) = enc.ciphertext
 
 function Base.similar(A::EncryptedArray, ::Type{T}, dims::Dims) where {T}
     ciphertexts = similar(A.ciphertexts, dims)

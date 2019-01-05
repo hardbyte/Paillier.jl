@@ -23,6 +23,8 @@ Ideally this will occur behind the scenes at serialization time.
 
 ## Quick Example
 
+This is using the *raw* paillier cryptosystem.
+
 ```julia
 julia> using Paillier
 julia> pub, priv = generate_paillier_keypair(1024)
@@ -38,6 +40,25 @@ julia> typeof(c)
 EncryptedNumber
 julia> decrypt(priv, c)
 70
+```
+
+## Floating point encoding
+
+```julia
+julia> keysize = 2048
+julia> base = 16
+julia> publickey, privatekey = generate_paillier_keypair(keysize)
+julia> encoding = Encoding(Float16, publickey, base)
+julia> a = 2000
+julia> b = 100
+julia> enc1 = encode_and_encrypt(a, encoding)
+julia> enc2 = encode_and_encrypt(b, encoding)
+julia> enc3 = decrypt_and_decode(privatekey, enc1 + enc2)
+julia> enc3
+2100.0
+julia> enc4 = decrypt_and_decode(privatekey, enc1 - 20.0)
+julia> enc4
+1980.0
 ```
 
 ## Array Support
