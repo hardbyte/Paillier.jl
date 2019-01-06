@@ -281,4 +281,9 @@ function +(a::EncryptedNumber, b::EncryptedNumber)
 end
 
 
-#TODO *
+*(b::Number, a::EncryptedNumber) = a * b
+function *(a::EncryptedNumber, b::Number)
+    encode_b = encode(b, a.encoding)
+    product = a.encrypted * encode_b.value
+    EncryptedNumber(product, a.encoding, a.exponent + encode_b.exponent)
+end
