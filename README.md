@@ -22,7 +22,7 @@ We don't obfuscate the results of encrypted math operations by default. This is 
 optimization copied from python-paillier, however after any homomorphic operation -
 before sharing an `EncryptedNumber` or `EncryptedArray` you must call `obfuscate()`
 to secure the ciphertext. Ideally this will occur behind the scenes at serialization
-time, but this library doesn't help with serialization (yet).
+time, but this library does not help with serialization (yet).
 
 
 ## Quick Example
@@ -113,5 +113,4 @@ However not everything works, e.g. the `LinearAlgebra.dot` function.
 
 ## More Examples
 
-A number of examples can (eventually) be found [here](./examples), for now just some 
-[benchmarking](http://nbviewer.ipython.org/github/hardbyte/Paillier.jl/blob/master/examples/benchmarking.ipynb).
+A number of examples can (eventually) be found [here](./examples).

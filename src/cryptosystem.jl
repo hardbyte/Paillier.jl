@@ -16,8 +16,8 @@ end
 
 const Ciphertext = BigInt
 
-Base.show(io::IO, pk::PrivateKey) = print(io, "PrivateKey(hash = $(hash(pk.l) + hash(pk.m)))")
-Base.show(io::IO, pk::PublicKey) = print(io, "PublicKey(hash =$(hash(pk.n)))")
+Base.show(io::IO, pk::PrivateKey) = print(io, "PrivateKey(hash=$(hash(pk.l) + hash(pk.m)))")
+Base.show(io::IO, pk::PublicKey) = print(io, "PublicKey(hash=$(hash(pk.n)))")
 
 max_int(public_key::PublicKey) = max_int(public_key.n)
 max_int(n::BigInt) = BigInt(floor(n // 3))

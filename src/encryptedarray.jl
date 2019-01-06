@@ -1,5 +1,12 @@
+"""
+This file adds support for working with arrays of encrypted numbers.
+"""
+
 export encrypt, decrypt, EncryptedArray
 
+"""
+A vector version of [`Encrypted`](@ref).
+"""
 struct EncryptedArray{Ciphertext, N} <: AbstractArray{Ciphertext, N}
     ciphertexts::Array{Ciphertext, N}
     public_key::PublicKey
