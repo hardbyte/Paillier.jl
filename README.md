@@ -1,6 +1,8 @@
 **Paillier.jl** is a [Julia](http://julialang.org/) package implementing the basics of the *Paillier* 
 partially homomorphic cryptosystem.
 
+[![Build Status](https://travis-ci.org/hardbyte/Paillier.jl.svg?branch=master)](https://travis-ci.org/hardbyte/Paillier.jl)
+
 Based off the [sketch](https://github.com/snipsco/paillier-libraries-benchmarks/tree/master/julia-sketch) 
 written by [Morten Dahl](https://github.com/mortendahl) at [Snips](https://snips.ai), and the 
 [python-paillier](https://github.com/n1analytics/python-paillier) library written by 
