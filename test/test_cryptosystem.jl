@@ -50,6 +50,8 @@ using Main.Paillier
             @test decrypt(priv, encrypt(pub, max_int)) == max_int
             @test decrypt(priv, 0 + encrypt(pub, max_int)) == max_int
             @test decrypt(priv, obfuscate(0 + encrypt(pub, max_int))) == max_int
+            @test decrypt(priv, 1 * encrypt(pub, max_int)) == max_int
+            @test decrypt(priv, max_int * encrypt(pub, 1)) == max_int
 
             # test wrap around
             @test decrypt(priv, 2 + encrypt(pub, max_int)) == 1
