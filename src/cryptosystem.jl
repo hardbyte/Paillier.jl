@@ -17,10 +17,7 @@ end
 const Ciphertext = BigInt
 
 Base.show(io::IO, pk::PrivateKey) = print(io, "PrivateKey(hash=$(hash(pk.l) + hash(pk.m)))")
-Base.show(io::IO, pk::PublicKey) = print(io, "PublicKey(hash=$(hash(pk.n)))")
-
-max_int(public_key::PublicKey) = max_int(public_key.n)
-max_int(n::BigInt) = BigInt(floor(n // 3))
+Base.show(io::IO, pk::PublicKey) = print(io, "PublicKey(bits=$(Int64(ceil(log2(pk.n)))), hash=$(hash(pk.n)))")
 
 
 """
@@ -151,13 +148,16 @@ function +(c1::Encrypted, c2::Encrypted)::Encrypted
     return Encrypted(raw_add(c1.public_key, c1.ciphertext, c2.ciphertext), c1.public_key)
 end
 
-function raw_multiply(public_key::PublicKey, ciphertext::Ciphertext, plaintext::Integer)::Ciphertext
-    @debug "Raw encrypted multiply by $plaintext"
+function _multiply_via_inversion(ciphertext, public_key, plaintext)
+    # Very large ciphertext. Use inversion trick
+    neg_ciphertext = invmod(ciphertext, public_key.n_sq)
+    neg_scalar = public_key.n - plaintext
+    new_ciphertext = powermod(neg_ciphertext, neg_scalar, public_key.n_sq)
+end
 
-    if public_key.n - max_int(public_key) <= plaintext
-        neg_ciphertext = invmod(ciphertext, public_key.n_sq)
-        neg_scalar = public_key.n - plaintext
-        new_ciphertext = powermod(neg_ciphertext, neg_scalar, public_key.n_sq)
+function raw_multiply(public_key::PublicKey, ciphertext::Ciphertext, plaintext::Integer)::Ciphertext
+    if public_key.n - BigInt(floor(public_key.n // 3)) <= plaintext
+        new_ciphertext = _multiply_via_inversion(ciphertext, public_key, plaintext)
     else
         new_ciphertext = powermod(ciphertext, plaintext, public_key.n_sq)
     end
