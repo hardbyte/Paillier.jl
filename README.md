@@ -74,6 +74,9 @@ julia> decrypt_and_decode(privatekey, enc1 - 20.0)
 -16.858408f0
 ```
 
+There are still rough edges when working with higher precision datatypes
+such as `BigFloat`. For now I'd recommend encoding either Float32 or Float64.  
+
 ## Array Support
 
 To avoid wasting space having multiple copies of the same `PublicKey` I've added an 

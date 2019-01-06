@@ -49,6 +49,15 @@ end
 Encoding(datatype::DataType, public_key::PublicKey) = Encoding(datatype, public_key, 16)
 
 """
+    max_int(::PublicKey)
+
+The maximum signed integer for our encoding system.
+We use a full third of the range for overflow detection.
+"""
+max_int(public_key::PublicKey) = max_int(public_key.n)
+max_int(n::BigInt) = (n-1)//3
+
+"""
 A datatype for a **plaintext** encoded number.
 Returned by the `encode` methods.
 """
@@ -133,7 +142,7 @@ end
 function decrease_exponent_to(enc::Encoded, new_exponent::Int64)::Encoded
     @info "Decreasing exponent of Encoded"
     if new_exponent > enc.exponent
-        throw(DomainError("New exponent should be more negative than existing"))
+        throw(DomainError("new exponent should be more negative than existing"))
     end
     factor = enc.encoding.base^(enc.exponent - new_exponent)
     value = mod(enc.value * factor, enc.encoding.public_key.n)
@@ -145,11 +154,13 @@ function intrep(scalar::Number, n::BigInt, base::Int64, exponent::Int64)::BigInt
     scalar = Rational{BigInt}(scalar)
     base = Rational{BigInt}(base)
 
-    int_rep = BigInt(round(scalar * base^(-exponent)))
+    rational_rep = scalar * base^(-exponent)
+    int_rep = BigInt(round(rational_rep))
 
     if abs(int_rep) > max_int(n)
-        throw(DomainError("Attempt to encode unrepresentable number"))
+        throw(DomainError("attempt to encode unrepresentable number $scalar * $base^$(-exponent) = $int_rep  where max_int = $(max_int(n))"))
     end
+    # Map negative numbers into [0, n]
     return mod(int_rep, n)
 end
 
@@ -162,21 +173,46 @@ See [`encode_and_encrypt`](@ref) for a method that also encrypts. If the exponen
 provided we attempt to match the precision of the passed julia type. See [`decode`](@ref) to
 go the other direction.
 """
-encode(scalar::Int64, encoding::Encoding) = encode(scalar, encoding, 0)
+encode(scalar::Integer, encoding::Encoding) = encode(scalar, encoding, 0)
 function encode(scalar::Number, encoding::Encoding)::Encoded
-    if typeof(scalar) <: AbstractFloat
-        mantisa_digits = precision(scalar)
-
+    if isinteger(scalar) && scalar < max_int(encoding.public_key)
+        prec_exponent = 0
+    elseif typeof(scalar) <: AbstractFloat
         # Precision calculation
+        # Ideally we'd like to encode with at least as much precision
+        # as the encoded type, but this may not be possible if the
+        # keysize is small or the precision(datatype) is large.
+
+        # number of bits the Encoded type can represent
+        mantisa_digits = precision(encoding.datatype)
+
+        # Can't use a precision greater than the keysize will allow
+        keysize_bits = Int64(ceil(log2(encoding.public_key.n//3)))
+
+        # Find the base-2 exponent of the float.
         bin_flt_exp = frexp(scalar)[2]
+
+        # the base-2 exponent of the least significant bit
         bin_lsb_exponent = bin_flt_exp - mantisa_digits
 
+        # A negative base-2 exponent more than our keysize.
+        if bin_lsb_exponent < -keysize_bits
+            @info "clamping as $bin_lsb_exponent < $(-keysize_bits)"
+            bin_lsb_exponent = -keysize_bits
+        end
+
+        # Convert to base encoding.base
         prec_exponent = Int64(floor(bin_lsb_exponent/log2(encoding.base)))
 
-    elseif typeof(scalar) <: Integer
-        prec_exponent = 0
+        # If the int_rep is too large to fit we can modify the exponent
+
+        while scalar * BigFloat(encoding.base)^-prec_exponent > encoding.public_key.n//3
+            @info "Current int_rep is going to be too big. Increasing exponent.", prec_exponent
+            prec_exponent += 1
+        end
+
     else
-        throw(DomainError("Don't know the precision for this"))
+        throw(DomainError("don't know the precision for this"))
     end
 
     # Note if encoding has a max exponent we would enforce here
