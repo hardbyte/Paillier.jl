@@ -15,11 +15,15 @@ The homomorphic properties of the paillier crypto system are:
 
 This is rough! Don't use for anything serious yet! Not reviewed by a cryptographer.
 
-In particular we don't obfuscate the results of encrypted math operations by default. This is an 
-optimization copied from python-paillier, however after any homomorphic operation - before sharing
-an `EncryptedNumber` or `EncryptedArray` you must call `obfuscate()` to secure the ciphertext. 
+Constant time functions have not been used, so this could be susceptible to timing
+side channel attacks.
 
-Ideally this will occur behind the scenes at serialization time.
+We don't obfuscate the results of encrypted math operations by default. This is an 
+optimization copied from python-paillier, however after any homomorphic operation -
+before sharing an `EncryptedNumber` or `EncryptedArray` you must call `obfuscate()`
+to secure the ciphertext. Ideally this will occur behind the scenes at serialization
+time, but this library doesn't help with serialization (yet).
+
 
 ## Quick Example
 

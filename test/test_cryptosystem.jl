@@ -13,6 +13,14 @@ using Main.Paillier
         @test pub.n_sq == pub.n^2
         @test priv.public_key == pub
 
+        @testset "Encrypt decrypt small integers" begin
+            @test decrypt(priv, encrypt(pub, -0)) == 0
+            @test decrypt(priv, encrypt(pub, 0)) == 0
+            for i in 1:10
+                @test decrypt(priv, encrypt(pub, i)) == i
+            end
+        end
+
         a = rand(1:10000000000)
         b = rand(1:10000000000)
         c_a = encrypt(pub, a)
@@ -30,6 +38,12 @@ using Main.Paillier
 
         @test_throws ArgumentError c_a + encrypt(other_pub, a)
         @test_throws ArgumentError decrypt(priv, encrypt(other_pub, a))
+
+        @testset "Test encrypting negative numbers" begin
+            @test_throws DomainError encrypt(pub, -1)
+            @test_throws DomainError encrypt(pub, -10)
+
+        end
 
         @testset "Test encrypting large numbers" begin
             max_int = BigInt(pub.n - 1)
