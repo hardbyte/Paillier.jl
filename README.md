@@ -44,21 +44,28 @@ julia> decrypt(priv, c)
 
 ## Floating point encoding
 
+To work with floating point numbers we follow the encoding scheme of 
+[python-paillier](https://python-paillier.readthedocs.io/en/develop/phe.html#phe.paillier.EncodedNumber).
+First create an `Encoding` that includes the native Julia type, the public key and
+(optionally) the `base` to use.
+
 ```julia
 julia> keysize = 2048
-julia> base = 16
 julia> publickey, privatekey = generate_paillier_keypair(keysize)
-julia> encoding = Encoding(Float16, publickey, base)
-julia> a = 2000
+julia> encoding = Encoding(Float32, publickey)
+julia> a = Float32(π)
 julia> b = 100
 julia> enc1 = encode_and_encrypt(a, encoding)
+julia> decrypt_and_decode(privatekey, enc1)
+3.1415927f0
+julia> enc1.exponent
+-6
 julia> enc2 = encode_and_encrypt(b, encoding)
 julia> enc3 = decrypt_and_decode(privatekey, enc1 + enc2)
 julia> enc3
-2100.0
-julia> enc4 = decrypt_and_decode(privatekey, enc1 - 20.0)
-julia> enc4
-1980.0
+103.141594f0
+julia> decrypt_and_decode(privatekey, enc1 - 20.0)
+-16.858408f0
 ```
 
 ## Array Support

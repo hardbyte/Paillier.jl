@@ -5,17 +5,48 @@ export Encoding, Encoded, EncryptedNumber, encode, decode, encode_and_encrypt
 export decrypt_and_decode, decrease_exponent_to
 
 """
+    Encoding(::DataType, ::PublicKey)
+    Encoding(::DataType, ::PublicKey, base::Int64)
+
 A datatype for describing an encoding scheme.
 
-julia> encoding = Encoding(Float64, public_key, 16)
+The public key is included as the encoding is effected by the maximum representable
+integer which varies with the `public_key`. Although I could be convinced to change
+this.
 
+# Examples
+
+Setting a base value is optional:
+```
+julia> encoding = Encoding(Float64, public_key, 64)
+```
+
+Full example showing homomorphic operations on floating point numbers:
+
+```jldoctest
+julia> keysize = 2048
+julia> publickey, privatekey = generate_paillier_keypair(keysize)
+julia> encoding = Encoding(Float32, publickey)
+julia> a = Float32(π)
+julia> enc1 = encode_and_encrypt(a, encoding)
+julia> decrypt_and_decode(privatekey, enc1)
+3.1415927f0
+julia> enc1.exponent
+-6
+julia> b = 100
+julia> enc2 = encode_and_encrypt(b, encoding)
+julia> decrypt_and_decode(privatekey, enc1 + enc2)
+103.141594f0
+julia> decrypt_and_decode(privatekey, enc1 - 20.0)
+-16.858408f0
+```
 """
 struct Encoding
     datatype::DataType
     public_key::PublicKey
     base::Int64
 end
-
+Encoding(datatype::DataType, public_key::PublicKey) = Encoding(datatype, public_key, 16)
 
 """
 A datatype for a **plaintext** encoded number.
@@ -28,14 +59,14 @@ struct Encoded
 end
 
 """
-    EncryptedNumber
+    EncryptedNumber(::Encrypted, ::Encoding, exponent::Int64)
+    EncryptedNumber(::Encoded, ::PublicKey)
 
 Datatype for representing an encrypted (and [`Encoded`](@ref)) number.
 
 # Examples
 ```jldoctest
 julia> EncryptedNumber(encoded_number, public_key)
-42
 ```
 """
 struct EncryptedNumber
@@ -49,12 +80,23 @@ function EncryptedNumber(encoded::Encoded, public_key::PublicKey)
     return EncryptedNumber(encrypted, encoded.encoding, encoded.exponent)
 end
 
+"""
+    encode_and_encrypt(plaintext::Number, encoding::Encoding)
 
+Encode the `plaintext` number using given `encoding` and encrypt
+using the `PublicKey` from the `encoding`.
+"""
 function encode_and_encrypt(plaintext::Number, encoding::Encoding)
     encoded_x = encode(plaintext, encoding)
     return EncryptedNumber(encoded_x, encoding.public_key)
 end
 
+"""
+    decrypt_and_decode(privatekey::PrivateKey, enc::EncryptedNumber)
+
+Decrypt an `EncryptedNumber` using the given `PrivateKey` and decode it
+using the `EncryptedNumber`'s encoding.
+"""
 function decrypt_and_decode(privatekey::PrivateKey, enc::EncryptedNumber)
     decrypted = decrypt(privatekey, enc.encrypted)
     return decode(decrypted, enc.exponent, enc.encoding)
@@ -72,7 +114,7 @@ We multiply the *encoded* value by the `Encoding.base` and decrement the
 We can keep ratcheting down the [`EncryptedNumber`](@ref)'s exponent until the
 encoded integer overflows. **This overflow may not be caught**.
 
-There is also a version that acts on [`EncodedNumber`](@ref) instances.
+There is also a (much faster) version that acts on [`EncodedNumber`](@ref)s.
 """
 function decrease_exponent_to(enc::EncryptedNumber, new_exponent::Int64)::EncryptedNumber
     if new_exponent > enc.exponent
@@ -111,6 +153,15 @@ function intrep(scalar::Number, n::BigInt, base::Int64, exponent::Int64)::BigInt
     return mod(int_rep, n)
 end
 
+"""
+    encode(::Number, ::Encoding)
+    encode(::Number, ::Encoding, exponent::Int64)
+
+Encode a number **but don't encrypt it** for the given `Encoding` - producing an `Encoded`.
+See [`encode_and_encrypt`](@ref) for a method that also encrypts. If the exponent is not
+provided we attempt to match the precision of the passed julia type. See [`decode`](@ref) to
+go the other direction.
+"""
 encode(scalar::Int64, encoding::Encoding) = encode(scalar, encoding, 0)
 function encode(scalar::Number, encoding::Encoding)::Encoded
     if typeof(scalar) <: AbstractFloat
@@ -126,10 +177,9 @@ function encode(scalar::Number, encoding::Encoding)::Encoded
         prec_exponent = 0
     else
         throw(DomainError("Don't know the precision for this"))
-        #prec_exponent = ?
     end
 
-    # Note If encoding has a max exponent we would enforce here
+    # Note if encoding has a max exponent we would enforce here
     exponent = prec_exponent
     return encode(scalar, encoding, exponent)
 end
@@ -138,6 +188,13 @@ function encode(scalar::Number, encoding::Encoding, exponent::Int64)::Encoded
     return Encoded(encoding, int_rep, exponent)
 end
 
+"""
+    decode(encoded::Encoded)
+    decode(encoded::BigInt, exponent::Int64, encoding::Encoding)
+
+The inverse of [`encode`](@ref), computes the decoding of the `Encoded` integer
+representation.
+"""
 decode(encoded::Encoded) = decode(encoded.value, encoded.exponent, encoded.encoding)
 function decode(encoded::BigInt, exponent::Int64, encoding::Encoding)
     max_num = max_int(encoding.public_key)
@@ -152,12 +209,14 @@ function decode(encoded::BigInt, exponent::Int64, encoding::Encoding)
     else
         throw(ArgumentError("Overflow detected"))
     end
-    # Keep error free by using Rational{BigInt} math
+    # Avoid rounding errors by using Rational{BigInt} math
     m = Rational{BigInt}(mantissa)
     b = Rational{BigInt}(encoding.base)
 
     return encoding.datatype(m * b^exponent)
 end
+
+# Homomorphic operations
 
 -(a::EncryptedNumber, b) = a + (-1*b)
 
