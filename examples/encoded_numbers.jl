@@ -19,8 +19,7 @@ enc3 = decrypt_and_decode(privatekey, enc1 + enc2)
 println("Adding encrypted numbers: $a + $b = $enc3")
 
 enc4 = decrypt_and_decode(privatekey, enc1 - 20.0)
-println("Subtract a constant: $a - 20.0 = $enc4")
+println("Subtract a constant from an encrypted number: $a - 20.0 = $enc4")
 
-# enc5 = decrypt_and_decode(privatekey, 3*enc1)
-# println("Multiplication: 3$a = $enc5")
-
+enc5 = decrypt_and_decode(privatekey, 3*enc1)
+println("Scaling an encrypted number: 3 * $a = $enc5")

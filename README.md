@@ -80,17 +80,41 @@ such as `BigFloat`. For now I'd recommend encoding either Float32 or Float64.
 ## Array Support
 
 To avoid wasting space having multiple copies of the same `PublicKey` I've added an 
-`EncryptedArray` type that shares one public key for an array of ciphertexts.
+`EncryptedArray` type that looks like an array of `EncryptedNumber` objects, but only
+stores the underlying ciphertexts and one copy of shared metadata such as the public 
+key, the encoding and the exponent. 
+
 
 ```julia
-julia> a = [0,1,2,3,4,5]
-julia> enca = encrypt(publickey, a)
-julia> encb = 2 * enca
-julia> decrypt(privatekey, reduce(+, encb))
-30
+julia> publickey, privatekey = generate_paillier_keypair(2048)
+julia> a = [0.0, 1.2e3, 3.14, π]
+julia> encoding = Encoding(Float32, publickey)
+julia> enca = encode_and_encrypt(a, encoding);
+julia> decrypt_and_decode(privatekey, enca)
+4-element Array{Float32,1}:
+    0.0      
+ 1200.0      
+    3.1399999
+    3.1415927
+julia> encb = 2 * enca;
+julia> decrypt_and_decode(privatekey, encb)
+4-element Array{Float32,1}:
+    0.0      
+ 2400.0      
+    6.2799997
+    6.2831855
+julia> decrypt_and_decode(privatekey, reduce(+, encb))
+2412.5632f0
+julia> enca.is_obfuscated
+true
+julia> encb.is_obfuscated
+false
+julia> encb = obfuscate(encb);
+julia> encb.is_obfuscated
+true
 ```
 
-See [encryptedarray.jl](./src/encryptedarray.jl) for implementation.
+See [encryptedarray.jl](./src/encryptedarray.jl) for the implementation.
 
 ### Broadcasting Support
 
@@ -99,19 +123,19 @@ I've made some effort towards supporting multidimensional arrays:
 ```julia
 julia> x = [[0, 1] [345, 32410] [3, 784564]]
 julia> publickey, privatekey = generate_paillier_keypair(4096)
-julia> encrypted = encrypt(publickey, x)
+julia> encrypted = encode_and_encrypt(x, encoding)
 julia> encrypted.public_key == publickey
 true
 julia> typeof(encrypted), size(encrypted)
 (EncryptedArray{BigInt,2}, (2, 3))
-julia> decrypt(privatekey, encrypted)
-2×3 Array{BigInt,2}:
- 0    345       3
- 1  32410  784564
-julia> decrypt(privatekey, [4, 2] .* encrypted .+ 100)
-2×3 Array{BigInt,2}:
- 100   1480      112
- 102  64920  1569228
+julia> decrypt_and_decode(privatekey, encrypted)
+2×3 Array{Float32,2}:
+ 0.0    345.0       3.0
+ 1.0  32410.0  784564.0
+julia> decrypt_and_decode(privatekey, [4, 2] .* encrypted .+ 100)
+2×3 Array{Float32,2}:
+ 100.0   1480.0  112.0      
+ 102.0  64920.0    1.56923e6
 ```
 
 However not everything works, e.g. the `LinearAlgebra.dot` function.

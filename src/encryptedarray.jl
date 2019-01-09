@@ -1,39 +1,61 @@
 """
 This file adds support for working with arrays of encrypted numbers.
+
+Any `Number` that can be [`Encoded`](@ref) can be efficiently
+represented internally as an array of `Ciphertext` sharing common metadata
+such as encoding and public key.
 """
 
-export encrypt, decrypt, EncryptedArray
+export encode_and_encrypt, decrypt_and_decode, EncryptedArray
 
 """
-A vector version of [`Encrypted`](@ref).
+    EncryptedArray
+
+A vector version of [`EncryptedNumber`](@ref).
 """
 struct EncryptedArray{Ciphertext, N} <: AbstractArray{Ciphertext, N}
     ciphertexts::Array{Ciphertext, N}
     public_key::PublicKey
     is_obfuscated::Bool
+    encoding::Encoding
+    exponent::Int64
 end
 
-EncryptedArray(xs::Array{Ciphertext}, public_key::PublicKey) = EncryptedArray(xs, public_key, false)
+decrease_exponent_to(xs::EncryptedArray, exponent::Int64) = [decrease_exponent_to(x, exponent) for x in xs]
 
-function encrypt(pub::PublicKey, plaintext::Array{Int64})
-    if all(x >= 0 for x in plaintext)
-        return encrypt(pub, Array{UInt64}(plaintext))
-    else
-        throw(DomainError("Can't directly encrypt negative numbers'"))
-    end
+function _encrypt_encoded(encoded::Array{Encoded}, encoding::Encoding, exponent::Int64)
+    encoded = [decrease_exponent_to(x, exponent) for x in encoded]
+    encrypted = [encrypt_raw(encoding.public_key, x.value) for x in encoded]
+    return EncryptedArray(encrypted, encoding.public_key, true, encoding, exponent)
 end
 
-function encrypt(pub::PublicKey, plaintext::Array{UInt64})
-    encrypted = [encrypt_raw(pub, x) for x in plaintext]
-    return EncryptedArray(encrypted, pub, true)
+
+"""
+    encode_and_encrypt(xs::Array{<:Number}, encoding::Encoding)
+    encode_and_encrypt(xs::Array{<:Number}, encoding::Encoding, exponent::Int64)
+
+Create an EncryptedArray of your plaintext numbers.
+"""
+function encode_and_encrypt(plaintext::Array{<:Number}, encoding::Encoding, exponent::Int64)
+    encoded = [encode(x, encoding) for x in plaintext]
+    return _encrypt_encoded(encoded, encoding, exponent)
 end
 
-function decrypt(priv::PrivateKey, encryptedarray::EncryptedArray)
+function encode_and_encrypt(plaintext::Array{<:Number}, encoding::Encoding)
+    encoded = [encode(x, encoding) for x in plaintext]
+
+    # We enforce that a single exponent is shared by the EncryptedArray
+    exponent = minimum(x.exponent for x in encoded)
+
+    return _encrypt_encoded(encoded, encoding, exponent)
+end
+
+function decrypt_and_decode(priv::PrivateKey, encryptedarray::EncryptedArray)
     if priv.public_key != encryptedarray.public_key
         throw(ArgumentError("Trying to decrypt with a different private key."))
     end
-    plaintext = [decrypt(priv, x) for x in encryptedarray.ciphertexts]
-    return plaintext
+    encoded = [decrypt(priv, x) for x in encryptedarray.ciphertexts]
+    return [decode(x, encryptedarray.exponent, encryptedarray.encoding) for x in encoded]
 end
 
 function obfuscate(x::EncryptedArray)::EncryptedArray
@@ -43,40 +65,63 @@ function obfuscate(x::EncryptedArray)::EncryptedArray
         return EncryptedArray(
             [obfuscate(x.public_key, ciphertext) for ciphertext in x.ciphertexts],
             x.public_key,
-            true)
+            true,
+            x.encoding,
+            x.exponent
+            )
     end
 end
 
-*(encryptedarray::EncryptedArray, scalar::Number) = *(scalar, encryptedarray)
-function *(scalar::Number, encryptedarray::EncryptedArray)
-    wrapped_multiply(plaintext) = raw_multiply(encryptedarray.public_key, plaintext, scalar)
-    new_ciphertexts = map(wrapped_multiply, encryptedarray.ciphertexts)
-    return EncryptedArray(new_ciphertexts, encryptedarray.public_key)
+
+*(scalar::Number, encryptedarray::EncryptedArray) = encryptedarray * scalar
+*(encodedScalar::Encoded, encryptedarray::EncryptedArray) = encryptedarray * encodedScalar
+*(encryptedarray::EncryptedArray, scalar::Number) = encryptedarray * encode(scalar, encryptedarray.encoding)
+function *(enc::EncryptedArray, scalar::Encoded)
+    encrypted_scale(x::Ciphertext) = raw_multiply(enc.public_key, x, scalar.value)
+
+    return EncryptedArray(
+        encrypted_scale.(enc.ciphertexts),
+        enc.public_key,
+        false,
+        enc.encoding,
+        enc.exponent + scalar.exponent
+        )
 end
 
-+(enc_a::EncryptedArray, plaintext::Array) = enc_a + encrypt(enc_a.public_key, plaintext)
-function +(enc_a::EncryptedArray, enc_b::EncryptedArray)
-    if enc_a.public_key != enc_b.public_key
++(enc_a::EncryptedArray, plaintext::Array{Number}) = enc_a + encode_and_encrypt(plaintext, enc_a.encoding)
+function +(a::EncryptedArray, b::EncryptedArray)
+    if a.public_key != b.public_key
         throw(ArgumentError("Trying to add vectors encrypted with a different keypair."))
     end
-    wrapped_add(c1, c2) = raw_add(enc_a.public_key, c1, c2)
-    new_ciphertexts = [wrapped_add(a,b) for (a,b) in zip(enc_a.ciphertexts, enc_b.ciphertexts)]
-    return EncryptedArray(new_ciphertexts, enc_a.public_key)
+
+    # In order to add two EncryptedArrays, their exponents must match
+    a,b = match_exponents(a, b)
+
+    wrapped_add(c1::Ciphertext, c2::Ciphertext) = raw_add(a.public_key, c1, c2)
+
+    return EncryptedArray(
+        [wrapped_add(c1,c2) for (c1,c2) in zip(a.ciphertexts, b.ciphertexts)],
+        a.public_key,
+        false,
+        a.encoding,
+        a.exponent
+        )
 end
 
 """
-Iterating over an EncryptedArray should give Encrypted objects and not the
-raw Ciphertext.
+Iterating over an EncryptedArray yields [`EncryptedNumber`](@ref) objects and not the
+raw Ciphertexts.
 """
 function Base.iterate(enc::EncryptedArray, state=1)
     if state > length(enc.ciphertexts)
         return nothing
     else
-        return Encrypted(enc.ciphertexts[state], enc.public_key), state+1
+        encrypted = Encrypted(enc.ciphertexts[state], enc.public_key, enc.is_obfuscated)
+        return EncryptedNumber(encrypted, enc.encoding, enc.exponent), state+1
     end
 end
 
-Base.eltype(::Type{EncryptedArray}) = Encrypted
+Base.eltype(::Type{EncryptedArray}) = EncryptedNumber
 Base.length(x::EncryptedArray) = length(x.ciphertexts)
 Base.size(x::EncryptedArray) = size(x.ciphertexts)
 Base.showarg(io::IO, A::EncryptedArray, toplevel) = print(io, typeof(A), " with public key '", A.public_key, "'")
@@ -85,28 +130,33 @@ Base.BroadcastStyle(::Type{<:EncryptedArray}) = Broadcast.ArrayStyle{EncryptedAr
 function Base.getindex(A::EncryptedArray, i::T) where {T}
     indexed = getindex(A.ciphertexts, i::T)
     if typeof(indexed) == Ciphertext
-        return Encrypted(indexed, A.public_key)
+        encrypted = Encrypted(indexed, A.public_key, A.is_obfuscated)
+        return EncryptedNumber(encrypted, A.encoding, A.exponent)
     else
-        return EncryptedArray(indexed, A.public_key)
+        # TODO Perhaps this should be a view instead of a new array...
+        return EncryptedArray(indexed, A.public_key, A.is_obfuscated, A.encoding, A.exponent)
     end
 end
 
-function Base.setindex!(A::EncryptedArray{T,N}, val::Encrypted, inds) where {T,N}
-    setindex!(A.ciphertexts, val.ciphertext, inds)
+function Base.setindex!(A::EncryptedArray{T,N}, val::Ciphertext, inds) where {T,N}
+    setindex!(A.ciphertexts, ciphertext, inds)
 end
-Base.convert(::Type{Ciphertext}, enc::Encrypted) = enc.ciphertext
+
+function Base.setindex!(A::EncryptedArray{T,N}, val::EncryptedNumber, inds) where {T,N}
+    setindex!(A.ciphertexts, val.encrypted.ciphertext, inds)
+end
 
 function Base.similar(A::EncryptedArray, ::Type{T}, dims::Dims) where {T}
     ciphertexts = similar(A.ciphertexts, dims)
-    EncryptedArray(ciphertexts, A.public_key)
+    EncryptedArray(ciphertexts, A.public_key, A.is_obfuscated, A.encoding, A.exponent)
 end
 
 # Required for broadcasting e.g. `100 .+ encrypted`
 function Base.similar(bc::Broadcast.Broadcasted{Broadcast.ArrayStyle{EncryptedArray}}, ::Type{ElType}) where ElType
     # Scan the inputs for the EncryptedArray:
     A = find_ea(bc)
-    # Use the public_key field of A to create the output
-    return EncryptedArray(similar(A.ciphertexts, axes(bc)), A.public_key)
+    # create the output EncryptedArray of the desired shape
+    return similar(A, axes(bc))
 end
 
 "`A = find_ea(As)` returns the first EncryptedArray among the arguments."

@@ -18,3 +18,12 @@ function random_lt_n(n::BigInt)
     rng = RandomDevice()
     return rand(rng, big.(1:n))
 end
+
+function match_exponents(a, b)
+    if a.exponent > b.exponent
+        a = decrease_exponent_to(a, b.exponent)
+    elseif a.exponent < b.exponent
+        b = decrease_exponent_to(b, a.exponent)
+    end
+    return a,b
+end

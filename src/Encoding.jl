@@ -140,7 +140,7 @@ function decrease_exponent_to(enc::EncryptedNumber, new_exponent::Int64)::Encryp
 end
 
 function decrease_exponent_to(enc::Encoded, new_exponent::Int64)::Encoded
-    @info "Decreasing exponent of Encoded"
+    @debug "Decreasing exponent of Encoded"
     if new_exponent > enc.exponent
         throw(DomainError("new exponent should be more negative than existing"))
     end
@@ -256,6 +256,9 @@ end
 
 -(a::EncryptedNumber, b) = a + (-1*b)
 
+# Tell the compiler we can swap the order...
++(a, b::EncryptedNumber) = b + a
+
 # Note we modify the encoded exponent in cleartext, not in the cipherspace.
 +(a::EncryptedNumber, b::Number) = a + EncryptedNumber(encode(b, a.encoding, a.exponent), a.encoding.public_key)
 
@@ -265,25 +268,21 @@ function +(a::EncryptedNumber, b::EncryptedNumber)
     end
 
     # In order to add two numbers, their exponents must match
-    if a.exponent > b.exponent
-        a = decrease_exponent_to(a, b.exponent)
-    elseif a.exponent < b.exponent
-        b = decrease_exponent_to(b, a.exponent)
-    end
+    a, b = match_exponents(a, b)
 
     if (a.exponent == b.exponent)
         return EncryptedNumber(a.encrypted + b.encrypted,
                                a.encoding,
                                a.exponent)
     else
-        throw("Couldn't add EncryptedNumbers? $(a.exponent), $(b.exponent)")
+        throw("couldn't match EncryptedNumber's exponents ($(a.exponent) & $(b.exponent))")
     end
 end
 
 
-*(b::Number, a::EncryptedNumber) = a * b
-function *(a::EncryptedNumber, b::Number)
-    encode_b = encode(b, a.encoding)
-    product = a.encrypted * encode_b.value
-    EncryptedNumber(product, a.encoding, a.exponent + encode_b.exponent)
+*(b::Union{Number, Encoded}, a::EncryptedNumber) = a * b
+*(a::EncryptedNumber, b::Number) = a * encode(b, a.encoding)
+function *(a::EncryptedNumber, b::Encoded)
+    product = a.encrypted * b.value
+    EncryptedNumber(product, a.encoding, a.exponent + b.exponent)
 end
