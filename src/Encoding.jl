@@ -39,6 +39,7 @@ julia> decrypt_and_decode(privatekey, enc1 + enc2)
 103.141594f0
 julia> decrypt_and_decode(privatekey, enc1 - 20.0)
 -16.858408f0
+
 ```
 """
 struct Encoding
@@ -74,7 +75,14 @@ end
 Datatype for representing an encrypted (and [`Encoded`](@ref)) number.
 
 # Examples
+
+```@meta
+public_key, priv = generate_paillier_keypair(128)
+encoding = Encoding(Float32, publickey)
+```
+
 ```jldoctest
+julia> encoded_number = encode(23.4, encoding)
 julia> EncryptedNumber(encoded_number, public_key)
 ```
 """

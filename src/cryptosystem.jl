@@ -14,6 +14,12 @@ struct PrivateKey
     public_key::PublicKey
 end
 
+"""
+    Ciphertext
+
+The raw encrypted information is always a `Ciphertext` which is
+simply an alias of BigInt.
+"""
 const Ciphertext = BigInt
 
 Base.show(io::IO, pk::PrivateKey) = print(io, "PrivateKey(hash=$(hash(pk.l) + hash(pk.m)))")
@@ -22,6 +28,7 @@ Base.show(io::IO, pk::PublicKey) = print(io, "PublicKey(bits=$(Int64(ceil(log2(p
 
 """
     Encrypted(ciphertext, public_key)
+    Encrypted(ciphertext, public_key, is_obfuscated::Bool)
 
 An `Encrypted` is the `Paillier.jl` library's low level encrypted type. This simple
 object that includes the `ciphertext`, `public_key` and tracks whether obfuscation
@@ -95,11 +102,13 @@ message (`ciphertext`) to a positive integer less than `public_key.n`.
 The result is always a `BigInt`.
 
 # Examples
+
 ```jldoctest
-julia> publickey, privatekey = generate_paillier_keypair(128)
-julia> ciphertext = encrypt(publickey, 10)
+julia> publickey, privatekey = generate_paillier_keypair(128);
+julia> ciphertext = encrypt(publickey, 10);
 julia> decrypt(privatekey, ciphertext)
 10
+
 ```
 """
 function decrypt(priv::PrivateKey, c::Ciphertext)::BigInt
@@ -128,11 +137,14 @@ conditions outlined in [`encrypt`](@ref) - i.e. positive integers under `public_
 # Examples
 ```jldoctest
 julia> publickey, privatekey = generate_paillier_keypair(128)
+
 julia> c1 = encrypt(publickey, 10)
+
 julia> decrypt(privatekey, c1 + 90)
 100
 
 julia> c2 = encrypt(publickey, 1000)
+
 julia> decrypt(privatekey, c1 + c2)
 1010
 ```
