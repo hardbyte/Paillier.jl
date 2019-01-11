@@ -2,6 +2,7 @@
 partially homomorphic cryptosystem.
 
 [![Build Status](https://travis-ci.org/hardbyte/Paillier.jl.svg?branch=master)](https://travis-ci.org/hardbyte/Paillier.jl)
+[![](https://img.shields.io/badge/docs-dev-blue.svg)](https://hardbyte.github.io/Paillier.jl/dev)
 
 Based off the [sketch](https://github.com/snipsco/paillier-libraries-benchmarks/tree/master/julia-sketch) 
 written by [Morten Dahl](https://github.com/mortendahl) at [Snips](https://snips.ai), and the 
