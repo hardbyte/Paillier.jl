@@ -99,12 +99,17 @@ end
 
 """
     encode_and_encrypt(plaintext::Number, encoding::Encoding)
+    encode_and_encrypt(plaintext::Number, encoding::Encoding, exponent::Int64)
 
 Encode the `plaintext` number using given `encoding` and encrypt
 using the `PublicKey` from the `encoding`.
 """
 function encode_and_encrypt(plaintext::Number, encoding::Encoding)
     encoded_x = encode(plaintext, encoding)
+    return EncryptedNumber(encoded_x, encoding.public_key)
+end
+function encode_and_encrypt(plaintext::Number, encoding::Encoding, exponent::Int64)
+    encoded_x = encode(plaintext, encoding, exponent)
     return EncryptedNumber(encoded_x, encoding.public_key)
 end
 
