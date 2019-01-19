@@ -24,12 +24,17 @@ function run_client(client_input_set, encoding)
 end
 
 function run_server(encrypted_polynomial, server_input_set, encoding)
-    # SERVER gets encrypted_polynomial, has own input set:
+    # SERVER gets encrypted_polynomial, has own input set.
+
+    """
+    Evaluate the encrypted polynomial using horner's rule
+    """
     function evaluate_encrypted_polynomial_at(x::Int64)
-        encres = encode_and_encrypt(0, encoding, 0)
-        for power in 0:length(encrypted_polynomial)-1
-            a = encrypted_polynomial[power+1]
-            encres += a * x^power
+        encres = encrypted_polynomial[end]
+
+        for coeffindx in length(encrypted_polynomial)-1:-1:1
+            a = encrypted_polynomial[coeffindx]
+            encres = a + x * encres
         end
         return encres
     end
@@ -43,7 +48,7 @@ function run_server(encrypted_polynomial, server_input_set, encoding)
 
         push!(serverresults, r * enc_p_y + enc_y)
     end
-    println(typeof(serverresults[1]))
+
     return EncryptedArray(serverresults)
 end
 
@@ -63,10 +68,10 @@ function get_intersection(enc, privatekey)
     return intersection
 end
 
-function run_psi(a, b)
+function run_psi(a, b, keysize)
     # INPUTS
-    println("Private Set Intersection")
-    publickey, privatekey = generate_paillier_keypair()
+    @debug("Private Set Intersection")
+    publickey, privatekey = generate_paillier_keypair(keysize)
     datatype = Int64
 
     client_input_set = Set{datatype}(a)
@@ -77,29 +82,32 @@ function run_psi(a, b)
 
     # CLIENT
     encrypted_polynomial = run_client(client_input_set, encoding)
-    println("Sending encrypted polynomial to server now")
+    @debug("Sending encrypted polynomial to server now")
 
     # SERVER
     enc = run_server(encrypted_polynomial, server_input_set, encoding)
 
     # CLIENT
-    println("Client now decrypted set intersection results")
+    @debug("Client now decrypted set intersection results")
     psi = get_intersection(enc, privatekey)
 
     @test intersect(client_input_set, server_input_set) == psi
     return psi
 end
 
-run_psi([0, 1, 2, 3, 4, 5, 6], [1, 3, 5, 7])
+#run_psi([0, 1, 2, 3, 4, 5, 6], [1, 3, 5, 7], 1024)
 
 @testset "Private Set Intersection" begin
-    KEYSIZES = [128, 256]
-    total = @elapsed @testset "client size $asize set" for asize in [5, 10, 100]
-        @testset "server size $bsize" for bsize in [5, 10]
-            a = rand(Int32, asize)
-            b = rand(Int32, bsize)
-            run_psi(a, b)
+    KEYSIZES = [256, 512, 1024, 2048]
+    @testset "Keysize $keysize" for keysize in KEYSIZES
+        total = @elapsed @testset "client size $asize set" for asize in [5, 50, 500]
+            @testset "server size $bsize" for bsize in [1, 10, 100]
+                a = rand(Int32, asize)
+                b = rand(Int32, bsize)
+                run_psi(a, b, keysize)
+            end
         end
+        println("Tests for $keysize bit keysize took $(round(total; digits=2)) s")
     end
-    println("Tests took $(round(total; digits=2)) s")
+
 end
