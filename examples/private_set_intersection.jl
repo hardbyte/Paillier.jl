@@ -1,10 +1,13 @@
 #=
-private_set_intersection - Semi-Honest Case.
+private set intersection - Semi-Honest Case.
+Based on the paper "Efficient Private Matching and Set Intersection" by Freedman et all.
+
+Also see https://github.com/encryptogroup/PSI
 =#
 
 include("../src/Paillier.jl")
 using Main.Paillier
-
+using Test
 using Polynomials: poly, coeffs
 
 function generate_polynomial(inputs::Array{Int64})
@@ -13,14 +16,14 @@ function generate_polynomial(inputs::Array{Int64})
     return coeffs(p)
 end
 
-function run_client(client_input_set)
+function run_client(client_input_set, encoding)
     # Client generates keys, and calculates polynomial roots from set inputs
     inputs = collect(client_input_set)
     polynomialcoeffs = generate_polynomial(inputs)
     return encode_and_encrypt(polynomialcoeffs, encoding, 0)
 end
 
-function run_server(encrypted_polynomial, server_input_set)
+function run_server(encrypted_polynomial, server_input_set, encoding)
     # SERVER gets encrypted_polynomial, has own input set:
     function evaluate_encrypted_polynomial_at(x::Int64)
         encres = encode_and_encrypt(0, encoding, 0)
@@ -31,7 +34,7 @@ function run_server(encrypted_polynomial, server_input_set)
         return encres
     end
 
-    serverresults = []
+    serverresults::Array{EncryptedNumber} = []
     for input in collect(server_input_set)
         enc_p_y = evaluate_encrypted_polynomial_at(input)
         enc_y = encode_and_encrypt(input, encoding)
@@ -40,11 +43,12 @@ function run_server(encrypted_polynomial, server_input_set)
 
         push!(serverresults, r * enc_p_y + enc_y)
     end
-    return serverresults
+    println(typeof(serverresults[1]))
+    return EncryptedArray(serverresults)
 end
 
-function get_intersection(enc)
-    intersection::Set{datatype} = Set()
+function get_intersection(enc, privatekey)
+    intersection::Set{enc.encoding.datatype} = Set()
     for encval in enc
         try
             decrypted = decrypt_and_decode(privatekey, encval)
@@ -59,27 +63,43 @@ function get_intersection(enc)
     return intersection
 end
 
-# INPUTS
-println("Private Set Intersection")
-publickey, privatekey = generate_paillier_keypair()
-datatype = Int64
+function run_psi(a, b)
+    # INPUTS
+    println("Private Set Intersection")
+    publickey, privatekey = generate_paillier_keypair()
+    datatype = Int64
 
-client_input_set = Set{datatype}([0, 1, 2, 3, 4, 6])
-server_input_set = Set{datatype}([0, 3, 4, 6, 7, 8, 9])
+    client_input_set = Set{datatype}(a)
+    server_input_set = Set{datatype}(b)
 
-# SHARED
-encoding = Encoding(datatype, publickey)
+    # SHARED
+    encoding = Encoding(datatype, publickey)
 
-# CLIENT
-encrypted_polynomial = run_client(client_input_set)
-println("Sending encrypted polynomial to server now")
+    # CLIENT
+    encrypted_polynomial = run_client(client_input_set, encoding)
+    println("Sending encrypted polynomial to server now")
 
-# SERVER
-enc = run_server(encrypted_polynomial, server_input_set)
+    # SERVER
+    enc = run_server(encrypted_polynomial, server_input_set, encoding)
 
-# CLIENT
-println("Client now decrypted set intersection results")
-psi = get_intersection(enc)
+    # CLIENT
+    println("Client now decrypted set intersection results")
+    psi = get_intersection(enc, privatekey)
 
-println(psi)
-println(intersect(client_input_set, server_input_set))
+    @test intersect(client_input_set, server_input_set) == psi
+    return psi
+end
+
+run_psi([0, 1, 2, 3, 4, 5, 6], [1, 3, 5, 7])
+
+@testset "Private Set Intersection" begin
+    KEYSIZES = [128, 256]
+    total = @elapsed @testset "client size $asize set" for asize in [5, 10, 100]
+        @testset "server size $bsize" for bsize in [5, 10]
+            a = rand(Int32, asize)
+            b = rand(Int32, bsize)
+            run_psi(a, b)
+        end
+    end
+    println("Tests took $(round(total; digits=2)) s")
+end
