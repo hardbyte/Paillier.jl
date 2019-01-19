@@ -27,6 +27,13 @@ function test_array(x, keysize)
     publickey, privatekey = KEYS[keysize]
     encoding = Encoding(Float64, publickey, 64)
 
+    @testset "Array of EncryptedNumbers" begin
+        encnum = [encode_and_encrypt(n, encoding) for n in x]
+        ea = EncryptedArray(encnum)
+        x2 = decrypt_and_decode(privatekey, ea)
+        @test all(a == b for (a,b) in zip(x, x2))
+    end
+
     encrypted = encode_and_encrypt(x, encoding)
     encrypted_exp = encode_and_encrypt(x, encoding, -10)
     x2 = decrypt_and_decode(privatekey, encrypted)

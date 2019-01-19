@@ -21,6 +21,19 @@ struct EncryptedArray{Ciphertext, N} <: AbstractArray{Ciphertext, N}
     exponent::Int64
 end
 
+function EncryptedArray(xs::Array{EncryptedNumber})
+    encoding = xs[1].encoding
+    publickey = encoding.public_key
+    exponent = minimum(x.exponent for x in xs)
+    return EncryptedArray(
+            [obfuscate(publickey, decrease_exponent_to(x, exponent).encrypted.ciphertext) for x in xs],
+            publickey,
+            true,
+            encoding,
+            exponent
+            )
+end
+
 decrease_exponent_to(xs::EncryptedArray, exponent::Int64) = [decrease_exponent_to(x, exponent) for x in xs]
 
 function _encrypt_encoded(encoded::Array{Encoded}, encoding::Encoding, exponent::Int64)
