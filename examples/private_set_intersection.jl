@@ -2,6 +2,24 @@
 private set intersection - Semi-Honest Case.
 Based on the paper "Efficient Private Matching and Set Intersection" by Freedman et all.
 
+Note this implementation includes balanced hash allocations which appears to be
+slower:
+
+## Results
+
+- non balanced allocations
+Tests for 256 bit keysize took 25.16 s
+Tests for 512 bit keysize took 23.85 s
+Tests for 1024 bit keysize took 57.12 s
+Tests for 2048 bit keysize took 245.9 s
+
+- balanced allocations
+Tests for 256 bit keysize took 35.71 s
+Tests for 512 bit keysize took 37.97 s
+Tests for 1024 bit keysize took 70.11 s
+Tests for 2048 bit keysize took 309.46 s
+
+
 Also see https://github.com/encryptogroup/PSI
 =#
 
