@@ -16,20 +16,55 @@ function generate_polynomial(inputs::Array{Int64})
     return coeffs(p)
 end
 
+"""
+Helper to map a hash in the range [0, typemax(UInt64)] to
+[1, num_buckets]. global for now.
+"""
+function map_to_bucket(value, num_buckets)
+    hash_value = hash(value)
+    # Assume hash is discrete uniform random across all of UInt64
+    # we multiply by num_buckets/typemax(UInt64) and map back to closest
+    # Int.
+    return 1 + Int64(round(Rational{BigInt}(hash_value, typemax(UInt64)) * (num_buckets-1)))
+end
+
+function allocate_input_to_bucket(input)
+    B = 10
+    buckets = [[] for i in 1:B]
+    for x in collect(input)
+        push!(buckets[map_to_bucket(x, B)], x)
+    end
+    return buckets
+end
+
 function run_client(client_input_set, encoding)
     # Client generates keys, and calculates polynomial roots from set inputs
     inputs = collect(client_input_set)
-    polynomialcoeffs = generate_polynomial(inputs)
-    return encode_and_encrypt(polynomialcoeffs, encoding, 0)
+
+    # Allocate inputs into B buckets
+    buckets = allocate_input_to_bucket(client_input_set)
+    @debug(collect(size(b) for b in buckets))
+    encrypted_polynomials = []
+    for bucket_inputs in buckets
+        polynomialcoeffs = generate_polynomial(inputs)
+        push!(encrypted_polynomials, encode_and_encrypt(polynomialcoeffs, encoding, 0))
+    end
+    return encrypted_polynomials
 end
 
-function run_server(encrypted_polynomial, server_input_set, encoding)
-    # SERVER gets encrypted_polynomial, has own input set.
+"""
+The server has their own input data, and gets from the client:
+   * an array of encrypted polynomials, and
+   * a hash function.
+
+"""
+function run_server(encrypted_polynomials, server_input_set, encoding)
+    # SERVER gets an Array of encrypted_polynomials, has own input set.
 
     """
-    Evaluate the encrypted polynomial using horner's rule
+    Evaluate a single encrypted polynomial using horner's rule
     """
-    function evaluate_encrypted_polynomial_at(x::Int64)
+    function evaluate_encrypted_polynomial_at(x::Int64, encrypted_polynomial)
         encres = encrypted_polynomial[end]
 
         for coeffindx in length(encrypted_polynomial)-1:-1:1
@@ -39,14 +74,23 @@ function run_server(encrypted_polynomial, server_input_set, encoding)
         return encres
     end
 
+    # All results go into one flat array
     serverresults::Array{EncryptedNumber} = []
-    for input in collect(server_input_set)
-        enc_p_y = evaluate_encrypted_polynomial_at(input)
-        enc_y = encode_and_encrypt(input, encoding)
-        # This is should be outside of possible set values:
-        r = Main.Paillier.n_bit_random_number(64)
 
-        push!(serverresults, r * enc_p_y + enc_y)
+    # Hash the server's inputs
+    # Allocate inputs into B buckets
+    buckets = allocate_input_to_bucket(server_input_set)
+    for bucket_index in eachindex(buckets)
+        bucket = buckets[bucket_index]
+        encrypted_polynomial = encrypted_polynomials[bucket_index]
+        for input in bucket
+            enc_p_y = evaluate_encrypted_polynomial_at(input, encrypted_polynomial)
+            enc_y = encode_and_encrypt(input, encoding)
+            # This is should be outside of possible set values:
+            r = Main.Paillier.n_bit_random_number(64)
+
+            push!(serverresults, r * enc_p_y + enc_y)
+        end
     end
 
     return EncryptedArray(serverresults)
@@ -81,11 +125,11 @@ function run_psi(a, b, keysize)
     encoding = Encoding(datatype, publickey)
 
     # CLIENT
-    encrypted_polynomial = run_client(client_input_set, encoding)
+    encrypted_polynomials = run_client(client_input_set, encoding)
     @debug("Sending encrypted polynomial to server now")
 
     # SERVER
-    enc = run_server(encrypted_polynomial, server_input_set, encoding)
+    enc = run_server(encrypted_polynomials, server_input_set, encoding)
 
     # CLIENT
     @debug("Client now decrypted set intersection results")
