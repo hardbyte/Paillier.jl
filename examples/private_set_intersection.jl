@@ -28,11 +28,26 @@ function map_to_bucket(value, num_buckets)
     return 1 + Int64(round(Rational{BigInt}(hash_value, typemax(UInt64)) * (num_buckets-1)))
 end
 
-function allocate_input_to_bucket(input)
+"""
+Using balanced hashing allocations.
+"""
+function allocate_input_to_bucket(input, addBoth=false)
     B = 10
     buckets = [[] for i in 1:B]
     for x in collect(input)
-        push!(buckets[map_to_bucket(x, B)], x)
+        index1 = map_to_bucket(x, B)
+        index2 = map_to_bucket(hash(x), B)
+        if addBoth
+            push!(buckets[index1], x)
+            push!(buckets[index2], x)
+        else
+            if length(buckets[index1]) < length(buckets[index2])
+                index = index1
+            else
+                index = index2
+            end
+            push!(buckets[index], x)
+        end
     end
     return buckets
 end
@@ -78,8 +93,9 @@ function run_server(encrypted_polynomials, server_input_set, encoding)
     serverresults::Array{EncryptedNumber} = []
 
     # Hash the server's inputs
-    # Allocate inputs into B buckets
-    buckets = allocate_input_to_bucket(server_input_set)
+    # Allocate server inputs into B buckets
+    buckets = allocate_input_to_bucket(server_input_set, true)
+
     for bucket_index in eachindex(buckets)
         bucket = buckets[bucket_index]
         encrypted_polynomial = encrypted_polynomials[bucket_index]
