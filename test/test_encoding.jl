@@ -72,6 +72,16 @@ function test_multipling_encrypted(publickey, privatekey, encoding)
     @test (res - 2.0) < 1e-50
 end
 
+function test_encoding_out_of_range(publickey, privatekey)
+    encoding = Encoding(Int64, publickey, 0)
+    encoding2 = Encoding(Int128, publickey, 0)
+
+    encrypted_number = encode_and_encrypt(BigInt(2)^65, encoding)
+    misinterpreted = EncryptedNumber(encrypted_number.encrypted, encoding2, 0)
+    decoded = decrypt_and_decode(privatekey, misinterpreted)
+    @test decoded == Int128(2)^65
+end
+
 @testset "$datatype Encoding" for datatype in [Float32, Float64]
     @testset "Keysize $keysize bits" for keysize in [1024, 2048]
         publickey, privatekey = generate_paillier_keypair(keysize)
