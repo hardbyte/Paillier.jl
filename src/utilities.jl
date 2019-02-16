@@ -1,6 +1,4 @@
 
-rng = RandomDevice()
-
 function n_bit_random_number(len::Number)
     max_n = ( BigInt(1) << len ) - 1
     if len > 2
@@ -17,6 +15,7 @@ function nbit_prime_of_size(n_bits)
 end
 
 function random_lt_n(n::BigInt)
+    rng = RandomDevice()
     return rand(rng, big.(1:n))
 end
 
