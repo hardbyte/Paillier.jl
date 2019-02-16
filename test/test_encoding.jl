@@ -8,6 +8,7 @@ function test_encoding_float(x::AbstractFloat, publickey, privatekey, encoding)
     @test (decoded - x) < 1e-50
 end
 
+
 function test_adding_encrypted(publickey, privatekey, encoding)
 
     ϵ = BigFloat(2.0)^-precision(encoding.datatype)
@@ -85,7 +86,7 @@ end
 @testset "$datatype Encoding" for datatype in [Float32, Float64]
     @testset "Keysize $keysize bits" for keysize in [1024, 2048]
         publickey, privatekey = generate_paillier_keypair(keysize)
-
+        @show test_encoding_out_of_range(publickey, privatekey)
         @testset "Encoding with base=$base" for base in [16, 64]
             encoding = Encoding(datatype, publickey, base)
             for x in [-12, 0, 1, 345, 324e10, 78e100]

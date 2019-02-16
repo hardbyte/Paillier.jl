@@ -1,7 +1,8 @@
 using Test
 
-include("../src/Paillier.jl")
-using Main.Paillier
+#include("../src/Paillier.jl")
+#using Main.Paillier
+using Paillier
 
 # Global testing settings
 
@@ -18,4 +19,8 @@ end
 include("test_cryptosystem.jl")
 include("test_encoding.jl")
 include("test_encryptedarray.jl")
+
+@testset "Test Examples" begin
+    include("test_examples.jl")
+end
 
