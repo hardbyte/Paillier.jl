@@ -13,6 +13,11 @@ using Polynomials: Poly, poly, coeffs
 # Uncomment to show all the debug statements
 #ENV["JULIA_DEBUG"] = "all"
 
+struct ConstantExponentEncoding
+    encoding::Encoding
+    exponent::Integer
+end
+
 """
 Return the coefficients of a polynomial from lowest power to highest.
 
