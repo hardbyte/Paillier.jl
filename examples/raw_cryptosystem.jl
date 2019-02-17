@@ -1,16 +1,16 @@
-using Paillier
+import Paillier
 
-pub, priv = generate_paillier_keypair(1024)
+pub, priv = Paillier.generate_paillier_keypair(1024)
 println(pub)
 println(priv)
 
-a = encrypt(pub, 10)
-b = encrypt(pub, 50)
-println("decrypt(a) = $(decrypt(priv, a))")
-println("decrypt(b) = $(decrypt(priv, b))")
+a = Paillier.encrypt(pub, 10)
+b = Paillier.encrypt(pub, 50)
+println("decrypt(a) = $(Paillier.decrypt(priv, a))")
+println("decrypt(b) = $(Paillier.decrypt(priv, b))")
 
-println("decrypt(a + 5) = $(decrypt(priv, a + 5))")
+println("decrypt(a + 5) = $(Paillier.decrypt(priv, a + 5))")
 # obfuscate before sharing an encrypted number
-c = obfuscate(2a + b);
+c = Paillier.obfuscate(2a + b);
 
-println("decrypt(2a + b) = ", decrypt(priv, c))
+println("decrypt(2a + b) = ", Paillier.decrypt(priv, c))
