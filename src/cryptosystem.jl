@@ -58,9 +58,9 @@ end
 Salt the `Encrypted` with a new random number. Required before
 sharing ciphertexts with another party.
 """
-obfuscate(x::Encrypted) = x.is_obfuscated ? x : Encrypted(obfuscate(RandomDevice(), x.public_key, x.ciphertext), x.public_key, true)
+obfuscate(x::Encrypted) = x.is_obfuscated ? x : Encrypted(obfuscate(default_rng(), x.public_key, x.ciphertext), x.public_key, true)
 obfuscate(rng::AbstractRNG, x::Encrypted) = x.is_obfuscated ? x : Encrypted(obfuscate(x.public_key, x.ciphertext), x.public_key, true)
-obfuscate(pub::PublicKey, x::Ciphertext) = obfuscate(RandomDevice(), pub, x)
+obfuscate(pub::PublicKey, x::Ciphertext) = obfuscate(default_rng(), pub, x)
 function obfuscate(rng::AbstractRNG, pub::PublicKey, x::Ciphertext)::Ciphertext
     r = random_lt_n(rng, pub.n)
     rn = powermod(r, pub.n, pub.n_sq)

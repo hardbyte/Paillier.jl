@@ -1,3 +1,5 @@
+const DEFAULT_KEY_LENGTH = 2048
+
 """
     generate_paillier_keypair([rng=GLOBAL_RNG], n_length=2048)
 
@@ -5,8 +7,8 @@ Generate a new Paillier keypair of given bit length.
 
 Returns a 2-tuple of the public and private key.
 """
-generate_paillier_keypair(n_length=2048) = generate_paillier_keypair(RandomDevice(), n_length)
-function generate_paillier_keypair(rng::AbstractRNG, n_length=2048)
+generate_paillier_keypair(n_length=DEFAULT_KEY_LENGTH) = generate_paillier_keypair(default_rng(), n_length)
+function generate_paillier_keypair(rng::AbstractRNG, n_length=DEFAULT_KEY_LENGTH)
     n_len = BigInt(0)
     n = BigInt(0)
     p = BigInt(0)
