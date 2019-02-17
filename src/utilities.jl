@@ -1,21 +1,21 @@
 
-function n_bit_random_number(len::Number)
+n_bit_random_number(len::Integer) = n_bit_random_number(RandomDevice(), len)
+function n_bit_random_number(rng::AbstractRNG, len::Integer)
     max_n = ( BigInt(1) << len ) - 1
     if len > 2
         min_n = BigInt(1) << (len - 1)
-        return rand(min_n:max_n)
+        return rand(rng, min_n:max_n)
     end
-    return rand(1:max_n)
+    return rand(rng, 1:max_n)
 end
 
-function nbit_prime_of_size(n_bits)
+function nbit_prime_of_size(rng::AbstractRNG, n_bits::Integer)
     # generate a random nbit number
-    r = n_bit_random_number(n_bits)
+    r = n_bit_random_number(rng, n_bits)
     return nextprime(r)
 end
 
-function random_lt_n(n::BigInt)
-    rng = RandomDevice()
+function random_lt_n(rng::AbstractRNG, n::BigInt)
     return rand(rng, big.(1:n))
 end
 
