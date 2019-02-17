@@ -5,16 +5,16 @@ Based on the paper "Efficient Private Matching and Set Intersection" by Freedman
 Avg time 10000x10000 for 128 bit keysize took 71.73 s
 =#
 
-include("../src/Paillier.jl")
-using Main.Paillier
+import Paillier
 using Test
 using Polynomials: Poly, poly, coeffs
+using Random: RandomDevice
 
 # Uncomment to show all the debug statements
 #ENV["JULIA_DEBUG"] = "all"
 
 struct ConstantExponentEncoding
-    encoding::Encoding
+    encoding::Paillier.Encoding
     exponent::Integer
 end
 
@@ -57,18 +57,18 @@ function allocate_input_to_bucket(input, num_buckets=3)
     return buckets
 end
 
-function run_client(client_input_set, public_key, num_buckets, encoding)
+function run_client(client_input_set, public_key, num_buckets, e::ConstantExponentEncoding)
     # Client generates keys, and calculates polynomial roots from set inputs
     # Allocate inputs into B buckets
-    encoded_input_set = [encode(x, encoding, 0).value for x in client_input_set]
+    encoded_input_set = [Paillier.encode(x, e.encoding, e.exponent).value for x in client_input_set]
     buckets = allocate_input_to_bucket(encoded_input_set, num_buckets)
 
     encrypted_polynomials = []
     for bucket_inputs in buckets
         polynomialcoeffs = generate_polynomial(bucket_inputs, public_key.n)
-        push!(encrypted_polynomials, [encrypt(public_key, coeff) for coeff in polynomialcoeffs])
+        push!(encrypted_polynomials, [Paillier.encrypt(public_key, coeff) for coeff in polynomialcoeffs])
     end
-    return encrypted_polynomials
+    return encrypted_polynomials, encoded_input_set
 end
 
 """
@@ -77,7 +77,7 @@ The server has their own input data, and gets from the client:
    * a hash function.
 
 """
-function run_server(encrypted_polynomials, server_input_set, public_key, num_buckets, encoding)
+function run_server(rng, encrypted_polynomials, server_input_set, public_key, num_buckets, e::ConstantExponentEncoding)
     # SERVER gets an Array of encrypted_polynomials, has own input set.
 
     """
@@ -91,10 +91,10 @@ function run_server(encrypted_polynomials, server_input_set, public_key, num_buc
         end
         return encres
     end
-    encoded_set = [encode(x, encoding, 0).value for x in server_input_set]
+    encoded_set = [Paillier.encode(x, e.encoding, e.exponent).value for x in server_input_set]
 
     # Buckets' results go into one flat array
-    serverresults::Array{Encrypted} = []
+    serverresults::Array{Paillier.Encrypted} = []
 
     # Hash the server's inputs into B buckets
     buckets = allocate_input_to_bucket(encoded_set, num_buckets)
@@ -106,10 +106,10 @@ function run_server(encrypted_polynomials, server_input_set, public_key, num_buc
         for input in bucket
             enc_p_y = evaluate_encrypted_polynomial_at(input, encrypted_polynomial)
 
-            enc_y = encrypt(public_key, input)
+            enc_y = Paillier.encrypt(public_key, input)
 
             # Multiplying by this r should take the result outside of possible set values:
-            r = Main.Paillier.n_bit_random_number(32)
+            r = Paillier.n_bit_random_number(32)
 
             push!(serverresults, r * enc_p_y + enc_y)
         end
@@ -118,14 +118,14 @@ function run_server(encrypted_polynomials, server_input_set, public_key, num_buc
     return serverresults
 end
 
-function get_intersection(client_input_set, enc, privatekey, encoding)
-    intersection::Set{encoding.datatype} = Set()
+function get_intersection(encoded_input_set, enc, privatekey, e::ConstantExponentEncoding)
+    intersection::Set{e.encoding.datatype} = Set()
 
     for encval in enc
         try
-            decrypted = decrypt(privatekey, encval)
-            decoded = decode(decrypted, 0, encoding)
-            if decoded in client_input_set
+            decrypted = Paillier.decrypt(privatekey, encval)
+            if decrypted in encoded_input_set
+                decoded = Paillier.decode(decrypted, e.exponent, e.encoding)
                 push!(intersection, decoded)
             end
         catch InexactError
@@ -137,36 +137,44 @@ function get_intersection(client_input_set, enc, privatekey, encoding)
 end
 
 
-function run_psi(a, b, keysize)
-    # INPUTS
-    #@show a, b
+run_psi(a, b, keysize) = run_psi(RandomDevice(), a, b, keysize)
+function run_psi(rng, a, b, keysize, exponent=0)
 
-    publickey, privatekey = generate_paillier_keypair(keysize)
+    publickey, privatekey = Paillier.generate_paillier_keypair(rng, keysize)
     datatype = typeof(a[1])
-    encoding = Encoding(datatype, publickey)
+    encoding = Paillier.Encoding(datatype, publickey)
+    encoding_with_exp = ConstantExponentEncoding(encoding, exponent)
 
     client_input_set = Set{datatype}(a)
     server_input_set = Set{datatype}(b)
     num_buckets = Int64(ceil(log(maximum([10, length(a), length(b)]))))
 
     # CLIENT
-    encrypted_polynomials = run_client(client_input_set, publickey, num_buckets, encoding)
+    encrypted_polynomials, encoded_input_set = run_client(client_input_set, publickey, num_buckets, encoding_with_exp)
     @debug("Sending encrypted polynomial to server now")
 
     # SERVER
-    enc = run_server(encrypted_polynomials, server_input_set, publickey, num_buckets, encoding)
+    enc = run_server(rng, encrypted_polynomials, server_input_set, publickey, num_buckets, encoding_with_exp)
 
     # CLIENT
     @debug("Client now decrypted set intersection results")
-    psi = get_intersection(client_input_set, enc, privatekey, encoding)
+    psi = get_intersection(encoded_input_set, enc, privatekey, encoding_with_exp)
 
-    @test intersect(client_input_set, server_input_set) == psi
-    return psi
+    # Verify the results
+    actual_result = intersect(client_input_set, server_input_set)
+    @test length(actual_result) == length(psi)
+    if exponent == 0
+        @test actual_result == psi
+    else
+        @test sum(abs.(sort(collect(actual_result)) .- sort(collect(psi)))) < 1e-15
+    end
+    psi
 end
 
-# To compile before we start timing
-@show run_psi([0, 1, 2, 3, 4, 5, 6], [1, 3, 5, 7], 128)
-@show run_psi([-1.0, 2.0, 3.0, 4.0], [-1.0, 3.0, 5.0, 7.0], 128)
+rng = RandomDevice()
+@show run_psi(rng, [0, 1, 2, 3, 4, 5, 6], [1, 3, 5, 7], 128)
+@show run_psi(rng, [-1.0, 2.0, 3.0, 4.0], [-1.0, 3.0, 5.0, 7.0], 128)
+@show run_psi(rng, [-1.5, 2.2, 3.3, 4.0, 632.243], [-1.5, 3.3, 5.0, 7.0, 632.243], 128, -12)
 
 
 function bench(keysize=512, asize=1000, bsize=1000, repeats=10)
@@ -176,7 +184,6 @@ function bench(keysize=512, asize=1000, bsize=1000, repeats=10)
     end
     println("Avg time $(asize)x$(bsize) for $keysize bit keysize took $(round(total/repeats; digits=2)) s")
 end
-
 
 #bench(128, 100, 100)
 #bench(128, 1000, 1000)
