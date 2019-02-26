@@ -1,7 +1,4 @@
 using Test
-
-#include("../src/Paillier.jl")
-#using Main.Paillier
 using Paillier
 
 # Global testing settings

@@ -1,4 +1,5 @@
-default_rng() = RandomDevice()
+_default_rng = RandomDevice()
+default_rng() = RandomDevice() #_default_rng
 
 n_bit_random_number(len::Integer) = n_bit_random_number(default_rng(), len)
 function n_bit_random_number(rng::AbstractRNG, len::Integer)

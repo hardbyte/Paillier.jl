@@ -143,4 +143,10 @@ However not everything works, e.g. the `LinearAlgebra.dot` function.
 
 ## More Examples
 
-A number of examples can (eventually) be found [here](./examples).
+A number of examples can be found in the [examples](./examples) folder.
+
+Run examples with Julia:
+
+```
+$ julia --project examples/raw_cryptosystem.jl
+```
