@@ -61,7 +61,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Core Cryptosystem",
     "title": "Paillier.obfuscate",
     "category": "function",
-    "text": "obfuscate(encrypted)\n\nSalt the Encrypted with a new random number. Required before sharing ciphertexts with another party.\n\n\n\n\n\n"
+    "text": "obfuscate(encrypted)\nobfuscate(rng, encrypted)\n\nSalt the Encrypted with a new random number. Required before sharing ciphertexts with another party.\n\n\n\n\n\n"
 },
 
 {
