@@ -1,5 +1,14 @@
-_default_rng = RandomDevice()
-default_rng() = RandomDevice() #_default_rng
+"""
+We create a single module global reference to the RandomDevice.
+
+https://discourse.julialang.org/t/handling-an-optional-rng-parameter/20895/12
+"""
+const _default_rng = Ref{RandomDevice}()
+function __init__()
+    _default_rng[] = RandomDevice()
+end
+
+default_rng() = _default_rng[]
 
 n_bit_random_number(len::Integer) = n_bit_random_number(default_rng(), len)
 function n_bit_random_number(rng::AbstractRNG, len::Integer)
