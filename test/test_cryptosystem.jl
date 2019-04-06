@@ -9,6 +9,8 @@ using Main.Paillier
     @testset "Keysize $keysize bits" for keysize in KEYSIZES
         pub, priv = generate_paillier_keypair(keysize)
 
+        init_random_stream(pub.n, 16)
+
         @test length(string(pub.n, base=2)) > 126
         @test pub.n_sq == pub.n^2
         @test priv.public_key == pub
