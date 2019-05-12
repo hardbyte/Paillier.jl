@@ -44,8 +44,8 @@ n_bit_producers = Dict{Integer, Channel}()
 lt_n_producers = Dict{Integer, Channel}()
 
 """
-When using a lot of n bit random numbers, call this function to start a
-Task generating a buffer of them.
+When using a lot of `n` bit random numbers, call `init_random_stream` to start a
+`Task` responsible for keeping a buffer full of them.
 """
 init_random_stream(n::Integer, buffer=DEFAULT_RANDOM_BUFFER) = init_random_stream(default_rng(), n, buffer)
 function init_random_stream(rng::AbstractRNG, n::Integer, buffer=DEFAULT_RANDOM_BUFFER)

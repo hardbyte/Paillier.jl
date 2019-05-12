@@ -7,7 +7,7 @@ partially homomorphic cryptosystem.
 Based off the [sketch](https://github.com/snipsco/paillier-libraries-benchmarks/tree/master/julia-sketch) 
 written by [Morten Dahl](https://github.com/mortendahl) at [Snips](https://snips.ai), and the 
 [python-paillier](https://github.com/n1analytics/python-paillier) library written by 
-[N1 Analytics](https://www.n1analytics.com).
+[N1 Analytics](https://www.n1analytics.com) & [Data61](https://data61.csiro.au).
 
 The homomorphic properties of the paillier crypto system are:
 
