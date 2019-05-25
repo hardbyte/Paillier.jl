@@ -1,7 +1,7 @@
 name = "Paillier"
 uuid = "787387ca-069e-11e9-28f2-d737a1e7e69e"
 authors = ["Brian Thorne <brian@thorne.link>"]
-version = "0.2.2"
+version = "0.2.3"
 
 [deps]
 Polynomials = "f27b6e38-b328-58d1-80ce-0feddd5e7a45"
