@@ -4,12 +4,13 @@ os:
   - linux
 julia:
   - 1.0
+  - 1.10
 notifications:
   email: false
 git:
   depth: 99999999
 
-codecov: true
+#codecov: true
 
 ## allow failures on nightly julia
 ## (tests will run but not make your overall status red)
@@ -19,9 +20,11 @@ matrix:
 
 jobs:
   include:
+    - stage: "Test"
+      script:
+        - julia --project -e 'using Pkg; Pkg.instantiate()'
+        - julia --project test/runtests.jl
     - stage: "Documentation"
-      julia: 1.0
-      os: linux
       script:
         - julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd()));
           Pkg.instantiate()'
