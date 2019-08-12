@@ -1,13 +1,8 @@
-**Paillier.jl** is a [Julia](http://julialang.org/) package implementing the basics of the *Paillier* 
-partially homomorphic cryptosystem.
+**Paillier.jl** is a [Julia](http://julialang.org/) package implementing the basics of
+ the *Paillier* partially homomorphic cryptosystem.
 
 [![Build Status](https://travis-ci.org/hardbyte/Paillier.jl.svg?branch=master)](https://travis-ci.org/hardbyte/Paillier.jl)
 [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://hardbyte.github.io/Paillier.jl/dev)
-
-Based off the [sketch](https://github.com/snipsco/paillier-libraries-benchmarks/tree/master/julia-sketch) 
-written by [Morten Dahl](https://github.com/mortendahl) at [Snips](https://snips.ai), and the 
-[python-paillier](https://github.com/n1analytics/python-paillier) library written by 
-[N1 Analytics](https://www.n1analytics.com).
 
 The homomorphic properties of the paillier crypto system are:
 
@@ -27,10 +22,24 @@ before sharing an `EncryptedNumber` or `EncryptedArray` you must call `obfuscate
 to secure the ciphertext. Ideally this will occur behind the scenes at serialization
 time, but this library does not help with serialization (yet).
 
+Based off the [sketch](https://github.com/snipsco/paillier-libraries-benchmarks/tree/master/julia-sketch) 
+written by [Morten Dahl](https://github.com/mortendahl) at [Snips](https://snips.ai), and the 
+[python-paillier](https://github.com/n1analytics/python-paillier) library written by 
+[N1 Analytics](https://www.n1analytics.com).
 
-## Quick Example
+## Examples
 
-This is using the *raw* paillier cryptosystem.
+A number of examples can be found in the [examples](./examples) folder.
+
+Run examples with Julia:
+
+```
+$ julia --project examples/raw_cryptosystem.jl
+```
+
+### Quick Example
+
+This is using the *raw* paillier cryptosystem (no encoding).
 
 ```julia
 julia> using Paillier
@@ -141,12 +150,3 @@ julia> decrypt_and_decode(privatekey, [4, 2] .* encrypted .+ 100)
 
 However not everything works, e.g. the `LinearAlgebra.dot` function.
 
-## More Examples
-
-A number of examples can be found in the [examples](./examples) folder.
-
-Run examples with Julia:
-
-```
-$ julia --project examples/raw_cryptosystem.jl
-```
