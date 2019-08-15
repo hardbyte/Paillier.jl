@@ -1,5 +1,5 @@
 name = "Paillier"
-uuid = "787387ca-069e-11e9-28f2-d737a1e7e69e"
+uuid = "84e01822-a062-59e4-8289-aa032edeecdd"
 authors = ["Brian Thorne <brian@thorne.link>"]
 version = "0.2.4"
 
