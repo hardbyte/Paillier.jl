@@ -53,7 +53,7 @@ julia> decrypt(priv, a + 5)
 julia> # obfuscate before sharing an encrypted number:
 julia> c = obfuscate(2a + b);
 julia> typeof(c)
-EncryptedNumber
+Encrypted
 julia> decrypt(priv, c)
 70
 ```
