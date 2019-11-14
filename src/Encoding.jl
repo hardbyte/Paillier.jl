@@ -42,12 +42,12 @@ julia> decrypt_and_decode(privatekey, enc1 - 20.0)
 
 ```
 """
-struct Encoding
-    datatype::DataType
+struct Encoding{T}
     public_key::PublicKey
     base::Int64
 end
-Encoding(datatype::DataType, public_key::PublicKey) = Encoding(datatype, public_key, 16)
+
+Encoding{T}(public_key::PublicKey) where T = Encoding{T}(public_key, 16)
 
 """
     max_int(::PublicKey)
@@ -106,12 +106,14 @@ using the `PublicKey` from the `encoding`.
 """
 function encode_and_encrypt(plaintext::Number, encoding::Encoding)
     encoded_x = encode(plaintext, encoding)
-    return EncryptedNumber(encoded_x, encoding.public_key)
+    return encrypt(encoded_x, encoding.public_key)
 end
 function encode_and_encrypt(plaintext::Number, encoding::Encoding, exponent::Int64)
     encoded_x = encode(plaintext, encoding, exponent)
-    return EncryptedNumber(encoded_x, encoding.public_key)
+    return encrypt(encoded_x, encoding.public_key)
 end
+
+encrypt(plaintext::Encoded, public_key::PublicKey) = EncryptedNumber(plaintext, public_key)
 
 """
     decrypt_and_decode(privatekey::PrivateKey, enc::EncryptedNumber)
@@ -186,8 +188,8 @@ See [`encode_and_encrypt`](@ref) for a method that also encrypts. If the exponen
 provided we attempt to match the precision of the passed julia type. See [`decode`](@ref) to
 go the other direction.
 """
-encode(scalar::Integer, encoding::Encoding) = encode(scalar, encoding, 0)
-function encode(scalar::Number, encoding::Encoding)::Encoded
+encode(scalar::Integer, encoding::Encoding{T}) where T <: Number = encode(scalar, encoding, 0)
+function encode(scalar::Number, encoding::Encoding{T})::Encoded where T <: Number
     if isinteger(scalar) && scalar < max_int(encoding.public_key)
         prec_exponent = 0
     elseif typeof(scalar) <: AbstractFloat
@@ -197,7 +199,7 @@ function encode(scalar::Number, encoding::Encoding)::Encoded
         # keysize is small or the precision(datatype) is large.
 
         # number of bits the Encoded type can represent
-        mantisa_digits = precision(encoding.datatype)
+        mantisa_digits = precision(T)
 
         # Can't use a precision greater than the keysize will allow
         keysize_bits = Int64(ceil(log2(encoding.public_key.n//3)))
@@ -245,7 +247,7 @@ The inverse of [`encode`](@ref), computes the decoding of the `Encoded` integer
 representation.
 """
 decode(encoded::Encoded) = decode(encoded.value, encoded.exponent, encoded.encoding)
-function decode(encoded::BigInt, exponent::Int64, encoding::Encoding)
+function decode(encoded::BigInt, exponent::Int64, encoding::Encoding{T}) where T
     max_num = max_int(encoding.public_key)
     if encoded >= encoding.public_key.n
         throw(ArgumentError("Attempt to decode corrupted ciphertext"))
@@ -262,7 +264,7 @@ function decode(encoded::BigInt, exponent::Int64, encoding::Encoding)
     m = Rational{BigInt}(mantissa)
     b = Rational{BigInt}(encoding.base)
 
-    return encoding.datatype(m * b^exponent)
+    return T(m * b^exponent)
 end
 
 # Homomorphic operations

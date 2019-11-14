@@ -8,7 +8,7 @@ keysize = 2048
 base = 64
 
 publickey, privatekey = Paillier.generate_paillier_keypair(keysize)
-encoding = Paillier.Encoding(Float16, publickey, base)
+encoding = Paillier.Encoding{Float16}(publickey, base)
 
 a = 2000.0
 b = 100.0

@@ -9,6 +9,22 @@ such as encoding and public key.
 export encode_and_encrypt, decrypt_and_decode, EncryptedArray
 
 """
+    EncodedArray
+
+A vector version of [`Encoded`](@ref)
+"""
+struct EncodedArray
+    plaintexts::Array{Encoded}
+    encoding::Encoding
+end
+EncodedArray(xs::Array{BigInt}, encoding::Encoding, exponent::Int64) = EncodedArray(
+    [
+        Encoded(encoding, x, exponent)
+        for x in xs
+    ], encoding)
+
+
+"""
     EncryptedArray
 
 A vector version of [`EncryptedNumber`](@ref).
@@ -31,17 +47,31 @@ function EncryptedArray(xs::Array{EncryptedNumber})
             true,
             encoding,
             exponent
-            )
+        )
 end
 
 decrease_exponent_to(xs::EncryptedArray, exponent::Int64) = [decrease_exponent_to(x, exponent) for x in xs]
 
-function _encrypt_encoded(encoded::Array{Encoded}, encoding::Encoding, exponent::Int64)
-    encoded = [decrease_exponent_to(x, exponent) for x in encoded]
-    encrypted = [encrypt_raw(encoding.public_key, x.value) for x in encoded]
-    return EncryptedArray(encrypted, encoding.public_key, true, encoding, exponent)
+function _normalize_exponent(encoded::Array{Encoded})
+    # Used to enforce that a single exponent is shared by all elements in an EncryptedArray
+    exponent = minimum(x.exponent for x in encoded)
+    return [decrease_exponent_to(x, exponent) for x in encoded]
 end
 
+encrypt(encoded::Array{Encoded}, encoding::Encoding) = encrypt(encoded, encoding.public_key)
+function encrypt(encoded::Array{Encoded}, public_key::PublicKey)
+    # TODO Doesn't seem like we should normalize the exponents here?
+    encoded_array = EncodedArray(_normalize_exponent(encoded), encoded[1].encoding)
+    return encrypt(encoded_array, public_key)
+end
+
+encrypt(encoded::EncodedArray, encoding::Encoding) = encrypt(encoded, encoding.public_key)
+function encrypt(encoded::EncodedArray, public_key::PublicKey)
+    encrypted = [encrypt_raw(public_key, x.value) for x in encoded.plaintexts]
+    # Is this valid to assume a single exponent for all EncodedArray instances?
+    exponent = encoded.plaintexts[1].exponent
+    return EncryptedArray(encrypted, public_key, true, encoded.encoding, exponent)
+end
 
 """
     encode_and_encrypt(xs::Array{<:Number}, encoding::Encoding)
@@ -50,25 +80,45 @@ end
 Create an EncryptedArray of your plaintext numbers.
 """
 function encode_and_encrypt(plaintext::Array{<:Number}, encoding::Encoding, exponent::Int64)
-    encoded = [encode(x, encoding) for x in plaintext]
-    return _encrypt_encoded(encoded, encoding, exponent)
+    encoded = encode(plaintext, encoding, exponent)
+    return encrypt(encoded, encoding)
 end
 
 function encode_and_encrypt(plaintext::Array{<:Number}, encoding::Encoding)
-    encoded = [encode(x, encoding) for x in plaintext]
-
-    # We enforce that a single exponent is shared by the EncryptedArray
-    exponent = minimum(x.exponent for x in encoded)
-
-    return _encrypt_encoded(encoded, encoding, exponent)
+    encoded = encode(plaintext, encoding)
+    return encrypt(encoded, encoding.public_key)
 end
+
+# TODO can we splat everything after Array{}, ...T?
+function encode(plaintext::Array{<:Number}, encoding::Encoding)
+     encoded_values = _normalize_exponent([encode(x, encoding) for x in plaintext])
+     return EncodedArray(encoded_values, encoding)
+ end
+encode(plaintext::Array{<:Number}, encoding::Encoding, exponent) = EncodedArray([encode(x, encoding, exponent) for x in plaintext], encoding)
 
 function decrypt_and_decode(priv::PrivateKey, encryptedarray::EncryptedArray)
     if priv.public_key != encryptedarray.public_key
         throw(ArgumentError("Trying to decrypt with a different private key."))
     end
-    encoded = [decrypt(priv, x) for x in encryptedarray.ciphertexts]
-    return [decode(x, encryptedarray.exponent, encryptedarray.encoding) for x in encoded]
+    raw_encoded = decrypt(priv, encryptedarray.ciphertexts)
+    # raw_encoded is a BigInt array
+    encoded = EncodedArray(raw_encoded, encryptedarray.encoding, encryptedarray.exponent)
+    return decode(encoded, encryptedarray.exponent, encryptedarray.encoding)
+end
+
+decrypt(priv::PrivateKey, ciphertexts::Array{Ciphertext}) = [decrypt(priv, x) for x in ciphertexts]
+
+# decode(encoded::Array{BigInt,1}, exponent::Int64, encoding::Encoding) = EncodedArray(
+#     [decode(x, exponent, encoding) for x in encoded],
+#     encoding
+# )
+
+decode(encoded::Array{Encoded}, exponent, encoding::Encoding) = [ dejcode(x, exponent, encoding) for x in encoded ]
+
+function decode(encoded::EncodedArray, exponent::Int64, encoding::Paillier.Encoding{T}) where T
+
+    return [decode(enc.value, exponent, encoding) for enc in encoded.plaintexts]
+
 end
 
 function obfuscate(x::EncryptedArray)::EncryptedArray

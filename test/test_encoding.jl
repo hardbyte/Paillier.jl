@@ -9,17 +9,17 @@ function test_encoding_float(x::AbstractFloat, publickey, privatekey, encoding)
 end
 
 
-function test_adding_encrypted(publickey, privatekey, encoding)
+function test_adding_encrypted(publickey, privatekey, encoding::Encoding{T}) where T
 
-    ϵ = BigFloat(2.0)^-precision(encoding.datatype)
-    ≊(a, b) = abs(encoding.datatype(a) - encoding.datatype(b)) < ϵ
+    ϵ = BigFloat(2.0)^-precision(T)
+    ≊(a, b) = abs(T(a) - T(b)) < ϵ
 
     # Define a few constants
-    one = oneunit(encoding.datatype)
-    a = parse(encoding.datatype, "445")
-    b = parse(encoding.datatype, "2")
-    c = parse(encoding.datatype, "0.1")
-    d = parse(encoding.datatype, "1.5e-10")
+    one = oneunit(T)
+    a = parse(T, "445")
+    b = parse(T, "2")
+    c = parse(T, "0.1")
+    d = parse(T, "1.5e-10")
 
     enc1 = encode_and_encrypt(one, encoding)
     enc2 = encode_and_encrypt(b, encoding)
@@ -59,7 +59,7 @@ function test_adding_encrypted(publickey, privatekey, encoding)
 end
 
 
-function test_multipling_encrypted(publickey, privatekey, encoding)
+function test_multipling_encrypted(publickey, privatekey, encoding::Encoding)
     enc1 = encode_and_encrypt(1.0, encoding)
     enc2 = encode_and_encrypt(2.0, encoding)
 
@@ -74,8 +74,8 @@ function test_multipling_encrypted(publickey, privatekey, encoding)
 end
 
 function test_encoding_out_of_range(publickey, privatekey)
-    encoding = Encoding(Int64, publickey, 0)
-    encoding2 = Encoding(Int128, publickey, 0)
+    encoding = Encoding{Int64}(publickey, 0)
+    encoding2 = Encoding{Int128}(publickey, 0)
 
     encrypted_number = encode_and_encrypt(BigInt(2)^65, encoding)
     misinterpreted = EncryptedNumber(encrypted_number.encrypted, encoding2, 0)
@@ -88,7 +88,7 @@ end
         publickey, privatekey = generate_paillier_keypair(keysize)
         @show test_encoding_out_of_range(publickey, privatekey)
         @testset "Encoding with base=$base" for base in [16, 64]
-            encoding = Encoding(datatype, publickey, base)
+            encoding = Encoding{datatype}(publickey, base)
             for x in [-12, 0, 1, 345, 324e10, 78e100]
                 typed_x = datatype(x)
                 if !isinf(typed_x)

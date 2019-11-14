@@ -25,7 +25,7 @@ end
 function test_array(x, keysize)
     @debug size(x)
     publickey, privatekey = KEYS[keysize]
-    encoding = Encoding(Float64, publickey, 64)
+    encoding = Encoding{Float64}(publickey, 64)
 
     @testset "Array of EncryptedNumbers" begin
         encnum = [encode_and_encrypt(n, encoding) for n in x]
@@ -44,6 +44,7 @@ function test_array(x, keysize)
     doubledciphertext = encrypted * 2
     @test length(doubledciphertext) == length(x)
     @test doubledciphertext.public_key == publickey
+    @test 2x == decrypt_and_decode(privatekey, encrypted_exp*2)
     @test 2x == decrypt_and_decode(privatekey, doubledciphertext)
     @test 3x == decrypt_and_decode(privatekey, doubledciphertext + encrypted)
     @test !(doubledciphertext + encrypted).is_obfuscated

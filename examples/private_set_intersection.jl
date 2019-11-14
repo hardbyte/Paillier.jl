@@ -13,9 +13,15 @@ using Random: RandomDevice
 # Uncomment to show all the debug statements
 #ENV["JULIA_DEBUG"] = "all"
 
-struct ConstantExponentEncoding
-    encoding::Paillier.Encoding
+struct ConstantExponentEncoding{T}
+    public_key::Paillier.PublicKey
+    base::Int64
     exponent::Integer
+end
+
+function Paillier.encode(scalar::T, encoding::ConstantExponentEncoding{T})::Paillier.Encoded where T<:Number
+    int_rep = Paillier.intrep(scalar, encoding.public_key.n, encoding.base, encoding.exponent)
+    return Paillier.Encoded(encoding, int_rep, encoding.exponent)
 end
 
 """
@@ -57,10 +63,10 @@ function allocate_input_to_bucket(input, num_buckets=3)
     return buckets
 end
 
-function run_client(client_input_set, public_key, num_buckets, e::ConstantExponentEncoding)
+function run_client(client_input_set, public_key, num_buckets, encoding::Paillier.Encoding, exponent::Int64)
     # Client generates keys, and calculates polynomial roots from set inputs
     # Allocate inputs into B buckets
-    encoded_input_set = [Paillier.encode(x, e.encoding, e.exponent).value for x in client_input_set]
+    encoded_input_set = [Paillier.encode(x, encoding, exponent).value for x in client_input_set]
     buckets = allocate_input_to_bucket(encoded_input_set, num_buckets)
 
     encrypted_polynomials = []
@@ -77,7 +83,7 @@ The server has their own input data, and gets from the client:
    * a hash function.
 
 """
-function run_server(rng, encrypted_polynomials, server_input_set, public_key, num_buckets, e::ConstantExponentEncoding)
+function run_server(rng, encrypted_polynomials, server_input_set, public_key, num_buckets, encoding::Paillier.Encoding, exponent)
     # SERVER gets an Array of encrypted_polynomials, has own input set.
 
     """
@@ -91,7 +97,8 @@ function run_server(rng, encrypted_polynomials, server_input_set, public_key, nu
         end
         return encres
     end
-    encoded_set = [Paillier.encode(x, e.encoding, e.exponent).value for x in server_input_set]
+    # TODO just dispatch encode on ConstantExponentEncoding
+    encoded_set = [Paillier.encode(x, encoding, exponent).value for x in server_input_set]
 
     # Buckets' results go into one flat array
     serverresults::Array{Paillier.Encrypted} = []
@@ -118,14 +125,15 @@ function run_server(rng, encrypted_polynomials, server_input_set, public_key, nu
     return serverresults
 end
 
-function get_intersection(encoded_input_set, enc, privatekey, e::ConstantExponentEncoding)
-    intersection::Set{e.encoding.datatype} = Set()
+function get_intersection(encoded_input_set, enc, privatekey, e::Paillier.Encoding{T}, exponent::Int64) where T
+
+    intersection::Set{T} = Set()
 
     for encval in enc
         try
             decrypted = Paillier.decrypt(privatekey, encval)
             if decrypted in encoded_input_set
-                decoded = Paillier.decode(decrypted, e.exponent, e.encoding)
+                decoded = Paillier.decode(decrypted, exponent, e)
                 push!(intersection, decoded)
             end
         catch InexactError
@@ -138,27 +146,26 @@ end
 
 
 run_psi(a, b, keysize) = run_psi(RandomDevice(), a, b, keysize)
-function run_psi(rng, a, b, keysize, exponent=0)
+function run_psi(rng, a, b, keysize, datatype::DataType, exponent=0)
 
     publickey, privatekey = Paillier.generate_paillier_keypair(rng, keysize)
-    datatype = typeof(a[1])
-    encoding = Paillier.Encoding(datatype, publickey)
-    encoding_with_exp = ConstantExponentEncoding(encoding, exponent)
+    encoding = Paillier.Encoding{datatype}(publickey, 16)
+    println("Running PSI with $(length(a)) x $(length(b)) of $(typeof(a[1]))")
 
     client_input_set = Set{datatype}(a)
     server_input_set = Set{datatype}(b)
     num_buckets = Int64(ceil(log(maximum([10, length(a), length(b)]))))
 
     # CLIENT
-    encrypted_polynomials, encoded_input_set = run_client(client_input_set, publickey, num_buckets, encoding_with_exp)
+    encrypted_polynomials, encoded_input_set = run_client(client_input_set, publickey, num_buckets, encoding, exponent)
     @debug("Sending encrypted polynomial to server now")
 
     # SERVER
-    enc = run_server(rng, encrypted_polynomials, server_input_set, publickey, num_buckets, encoding_with_exp)
+    enc = run_server(rng, encrypted_polynomials, server_input_set, publickey, num_buckets, encoding, exponent)
 
     # CLIENT
     @debug("Client now decrypted set intersection results")
-    psi = get_intersection(encoded_input_set, enc, privatekey, encoding_with_exp)
+    psi = get_intersection(encoded_input_set, enc, privatekey, encoding, exponent)
 
     # Verify the results
     actual_result = intersect(client_input_set, server_input_set)
@@ -172,9 +179,12 @@ function run_psi(rng, a, b, keysize, exponent=0)
 end
 
 rng = RandomDevice()
-@show run_psi(rng, [0, 1, 2, 3, 4, 5, 6], [1, 3, 5, 7], 128)
-@show run_psi(rng, [-1.0, 2.0, 3.0, 4.0], [-1.0, 3.0, 5.0, 7.0], 128)
-@show run_psi(rng, [-1.5, 2.2, 3.3, 4.0, 632.243], [-1.5, 3.3, 5.0, 7.0, 632.243], 128, -12)
+intencodingT = Int64
+floatencodingT = Float64
+
+@show run_psi(rng, [0, 1, 2, 3, 4, 5, 6], [1, 3, 5, 7], 128, intencodingT)
+@show run_psi(rng, [-1.0, 2.0, 3.0, 4.0], [-1.0, 3.0, 5.0, 7.0], 128, floatencodingT)
+@show run_psi(rng, [-1.5, 2.2, 3.3, 4.0, 632.243], [-1.5, 3.3, 5.0, 7.0, 632.243], 128, floatencodingT, -12)
 
 
 function bench(keysize=512, asize=1000, bsize=1000, repeats=10)
