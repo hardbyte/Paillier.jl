@@ -47,3 +47,13 @@ end
         println("Tests for $keysize bit keysize took $(round(total; digits=2)) s")
     end
 end
+
+function bench(keysize=512, asize=1000, bsize=1000, repeats=10)
+    a, b = overlapping_random_sets(asize, bsize, 0.25)
+    total = @elapsed for repeat in 1:repeats
+        run_psi(rng, a, b, keysize, Int64)
+    end
+    println("Avg time $(asize)x$(bsize) for $keysize bit keysize took $(round(total/repeats; digits=2)) s")
+end
+
+bench(128, 500, 500)

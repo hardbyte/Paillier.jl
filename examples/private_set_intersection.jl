@@ -13,17 +13,6 @@ using Random: RandomDevice
 # Uncomment to show all the debug statements
 #ENV["JULIA_DEBUG"] = "all"
 
-struct ConstantExponentEncoding{T}
-    public_key::Paillier.PublicKey
-    base::Int64
-    exponent::Integer
-end
-
-function Paillier.encode(scalar::T, encoding::ConstantExponentEncoding{T})::Paillier.Encoded where T<:Number
-    int_rep = Paillier.intrep(scalar, encoding.public_key.n, encoding.base, encoding.exponent)
-    return Paillier.Encoded(encoding, int_rep, encoding.exponent)
-end
-
 """
 Return the coefficients of a polynomial from lowest power to highest.
 
@@ -187,13 +176,3 @@ floatencodingT = Float64
 @show run_psi(rng, [-1.5, 2.2, 3.3, 4.0, 632.243], [-1.5, 3.3, 5.0, 7.0, 632.243], 128, floatencodingT, -12)
 
 
-function bench(keysize=512, asize=1000, bsize=1000, repeats=10)
-    a, b = overlapping_random_sets(asize, bsize, 0.25)
-    total = @elapsed for repeat in 1:repeats
-        run_psi(a, b, keysize)
-    end
-    println("Avg time $(asize)x$(bsize) for $keysize bit keysize took $(round(total/repeats; digits=2)) s")
-end
-
-#bench(128, 100, 100)
-#bench(128, 1000, 1000)
