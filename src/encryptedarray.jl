@@ -58,10 +58,16 @@ function _normalize_exponent(encoded::Array{Encoded})
     return [decrease_exponent_to(x, exponent) for x in encoded]
 end
 
+
+"""
+    encrypt(::Array{Encoded}, ::Encoding)
+    encrypt(::Array{Encoded}, ::PublicKey)
+
+Encrypt an array of encoded instances
+"""
 encrypt(encoded::Array{Encoded}, encoding::Encoding) = encrypt(encoded, encoding.public_key)
 function encrypt(encoded::Array{Encoded}, public_key::PublicKey)
-    # TODO Doesn't seem like we should normalize the exponents here?
-    encoded_array = EncodedArray(_normalize_exponent(encoded), encoded[1].encoding)
+    encoded_array = EncodedArray(encoded, encoded[1].encoding)
     return encrypt(encoded_array, public_key)
 end
 
@@ -116,9 +122,7 @@ decrypt(priv::PrivateKey, ciphertexts::Array{Ciphertext}) = [decrypt(priv, x) fo
 decode(encoded::Array{Encoded}, exponent, encoding::Encoding) = [ dejcode(x, exponent, encoding) for x in encoded ]
 
 function decode(encoded::EncodedArray, exponent::Int64, encoding::Paillier.Encoding{T}) where T
-
     return [decode(enc.value, exponent, encoding) for enc in encoded.plaintexts]
-
 end
 
 function obfuscate(x::EncryptedArray)::EncryptedArray
@@ -151,7 +155,10 @@ function *(enc::EncryptedArray, scalar::Encoded)
         )
 end
 
-+(enc_a::EncryptedArray, plaintext::Array{Number}) = enc_a + encode_and_encrypt(plaintext, enc_a.encoding)
+-(a::EncryptedArray, b::AbstractArray) = a + (-1*b)
+
++(enc_a::EncryptedArray, plaintext::Array{Number}) = enc_a + encode(plaintext, enc_a.encoding, enc_a.exponent)
++(enc_a::EncryptedArray, plaintext::EncodedArray) = enc_a + encrypt(plaintext, enc_a.encoding)
 function +(a::EncryptedArray, b::EncryptedArray)
     if a.public_key != b.public_key
         throw(ArgumentError("Trying to add vectors encrypted with a different keypair."))

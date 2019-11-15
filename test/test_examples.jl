@@ -17,6 +17,11 @@ end
     @test 6000.0 == enc5
 end
 
+@testset "Test custom_encodings.jl example" begin
+    @capture_stdout include("../examples/custom_encodings.jl")
+    @test 6000.0 == enc5
+end
+
 @testset "Test private_set_intersection.jl example" begin
     @capture_stdout include("../examples/private_set_intersection.jl")
     include("test_psi_example.jl")

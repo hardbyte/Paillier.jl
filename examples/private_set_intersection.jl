@@ -1,6 +1,7 @@
 #=
 private set intersection - Semi-Honest Case.
-Based on the paper "Efficient Private Matching and Set Intersection" by Freedman et all.
+Based on the paper "Efficient Private Matching and Set Intersection"
+by Freedman et all.
 
 Avg time 10000x10000 for 128 bit keysize took 71.73 s
 =#
@@ -139,7 +140,7 @@ function run_psi(rng, a, b, keysize, datatype::DataType, exponent=0)
 
     publickey, privatekey = Paillier.generate_paillier_keypair(rng, keysize)
     encoding = Paillier.Encoding{datatype}(publickey, 16)
-    println("Running PSI with $(length(a)) x $(length(b)) of $(typeof(a[1]))")
+    println("Running PSI with $(length(a)) x $(length(b)) of $(datatype))")
 
     client_input_set = Set{datatype}(a)
     server_input_set = Set{datatype}(b)
@@ -168,11 +169,7 @@ function run_psi(rng, a, b, keysize, datatype::DataType, exponent=0)
 end
 
 rng = RandomDevice()
-intencodingT = Int64
-floatencodingT = Float64
 
-@show run_psi(rng, [0, 1, 2, 3, 4, 5, 6], [1, 3, 5, 7], 128, intencodingT)
-@show run_psi(rng, [-1.0, 2.0, 3.0, 4.0], [-1.0, 3.0, 5.0, 7.0], 128, floatencodingT)
-@show run_psi(rng, [-1.5, 2.2, 3.3, 4.0, 632.243], [-1.5, 3.3, 5.0, 7.0, 632.243], 128, floatencodingT, -12)
-
-
+@show run_psi(rng, [0, 1, 2, 3, 4, 5, 6], [1, 3, 5, 7], 128, Int16)
+@show run_psi(rng, [-1.0, 2.0, 3.0, 4.0], [-1.0, 3.0, 5.0, 7.0], 128, Float32)
+@show run_psi(rng, [-1.5, 2.2, 3.3, 4.0, 632.243], [-1.5, 3.3, 5.0, 7.0, 632.243], 128, Float64, -12)
