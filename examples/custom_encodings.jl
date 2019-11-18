@@ -2,7 +2,8 @@ import Paillier
 using Measurements
 
 """
-This example uses a custom Encoding.
+This example uses a custom Encoding to take a Measurement and encode it for encryption
+as two encrypted numbers (the value and the uncertainty).
 
 """
 keysize = 2048

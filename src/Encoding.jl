@@ -81,6 +81,9 @@ function EncryptedNumber(encoded::Encoded, public_key::PublicKey)
     return EncryptedNumber(encrypted, encoded.encoding, encoded.exponent)
 end
 
+Base.show(io::IO, enc::EncryptedNumber) = print(io, "EncryptedNumber(exponent=$(enc.exponent), hash=$(hash(enc.encrypted)))")
+
+
 """
     encode_and_encrypt(plaintext::Number, encoding::Encoding)
     encode_and_encrypt(plaintext::Number, encoding::Encoding, exponent::Int64)
