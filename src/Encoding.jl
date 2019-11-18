@@ -5,41 +5,23 @@ export Encoding, Encoded, EncryptedNumber, encode, decode, encode_and_encrypt
 export decrypt_and_decode, decrease_exponent_to
 
 """
-    Encoding(::DataType, ::PublicKey)
-    Encoding(::DataType, ::PublicKey, base::Int64)
+    Encoding{::DataType}(::PublicKey)
+    Encoding{::DataType,(::PublicKey, base::Int64)
 
-A datatype for describing an encoding scheme.
+A datatype for describing a fixed point encoding scheme for Julia DataTypes.
 
 The public key is included as the encoding is effected by the maximum representable
-integer which varies with the `public_key`. Although I could be convinced to change
-this.
+integer which varies with the `public_key`.
+
+Setting a base value is optional - other Paillier implementations may use a  different
+base.
 
 # Examples
 
-Setting a base value is optional:
+Specifying the optional base for encoding a Float64:
+
 ```
-julia> encoding = Encoding(Float64, public_key, 64)
-```
-
-Full example showing homomorphic operations on floating point numbers:
-
-```jldoctest
-julia> keysize = 2048
-julia> publickey, privatekey = generate_paillier_keypair(keysize)
-julia> encoding = Encoding(Float32, publickey)
-julia> a = Float32(π)
-julia> enc1 = encode_and_encrypt(a, encoding)
-julia> decrypt_and_decode(privatekey, enc1)
-3.1415927f0
-julia> enc1.exponent
--6
-julia> b = 100
-julia> enc2 = encode_and_encrypt(b, encoding)
-julia> decrypt_and_decode(privatekey, enc1 + enc2)
-103.141594f0
-julia> decrypt_and_decode(privatekey, enc1 - 20.0)
--16.858408f0
-
+julia> encoding = Encoding{Float64}(public_key, 64)
 ```
 """
 struct Encoding{T}
@@ -61,6 +43,8 @@ max_int(n::BigInt) = (n-1)//3
 """
 A datatype for a **plaintext** encoded number.
 Returned by the `encode` methods.
+
+Represents the Julia value as a `BigInt`.
 """
 struct Encoded
     encoding::Encoding
@@ -72,13 +56,13 @@ end
     EncryptedNumber(::Encrypted, ::Encoding, exponent::Int64)
     EncryptedNumber(::Encoded, ::PublicKey)
 
-Datatype for representing an encrypted (and [`Encoded`](@ref)) number.
+Datatype for representing an Encrypted number with a known Encoding.
 
 # Examples
 
 ```@meta
 public_key, priv = generate_paillier_keypair(128)
-encoding = Encoding(Float32, publickey)
+encoding = Encoding{Float32}(publickey)
 ```
 
 ```jldoctest
