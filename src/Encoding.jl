@@ -1,5 +1,5 @@
-
 # Floating point encoding for the Paillier cryptosystem.
+import LinearAlgebra.dot
 
 export Encoding, Encoded, EncryptedNumber, encode, decode, encode_and_encrypt
 export decrypt_and_decode, decrease_exponent_to
@@ -267,6 +267,9 @@ function decode(encoded::BigInt, exponent::Int64, encoding::Encoding{T}) where T
     return T(m * b^exponent)
 end
 
+
+zero(a::EncryptedNumber) = encode_and_encrypt(0, a.encoding, a.exponent)
+
 # Homomorphic operations
 
 -(a::EncryptedNumber, b) = a + (-1*b)
@@ -302,3 +305,6 @@ function *(a::EncryptedNumber, b::Encoded)
     product = a.encrypted * b.value
     EncryptedNumber(product, a.encoding, a.exponent + b.exponent)
 end
+
+# Should this be here? Is depending on LinearAlgebra necassary?
+dot(a::EncryptedNumber, b::Number) = a * b

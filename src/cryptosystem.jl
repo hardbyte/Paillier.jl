@@ -1,6 +1,7 @@
 import Base.+
 import Base.-
 import Base.*
+import Base.zero
 
 struct PublicKey
     n::BigInt
@@ -125,6 +126,8 @@ function decrypt(priv::PrivateKey, enc::Encrypted)::BigInt
     c = enc.ciphertext
     return decrypt(priv, c)
 end
+
+zero(encrypted::Encrypted) = encrypt(encrypted.public_key, 0)
 
 raw_add(public_key::PublicKey, c1::Ciphertext, c2::Ciphertext) = mod(c1 * c2, public_key.n_sq)
 

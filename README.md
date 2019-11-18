@@ -17,15 +17,15 @@ Constant time functions have not been used, so this could be susceptible to timi
 side channel attacks.
 
 We don't obfuscate the results of encrypted math operations by default. This is an 
-optimization copied from python-paillier, however after any homomorphic operation -
+optimization copied from `python-paillier`, however after any homomorphic operation -
 before sharing an `EncryptedNumber` or `EncryptedArray` you must call `obfuscate()`
 to secure the ciphertext. Ideally this will occur behind the scenes at serialization
 time, but this library does not help with serialization (yet).
 
 Based off the [sketch](https://github.com/snipsco/paillier-libraries-benchmarks/tree/master/julia-sketch) 
 written by [Morten Dahl](https://github.com/mortendahl) at [Snips](https://snips.ai), and the 
-[python-paillier](https://github.com/n1analytics/python-paillier) library written by 
-[N1 Analytics](https://www.n1analytics.com).
+[python-paillier](https://github.com/data61/python-paillier) library written by 
+[CSIRO's Data61](https://data61.csiro.au) as part of N1 Analytics.
 
 ## Examples
 
@@ -62,13 +62,13 @@ julia> decrypt(priv, c)
 
 To work with floating point numbers we follow the encoding scheme of 
 [python-paillier](https://python-paillier.readthedocs.io/en/develop/phe.html#phe.paillier.EncodedNumber).
-First create an `Encoding` that includes the native Julia type, the public key and
+First create an `Encoding` for the native Julia type, the public key and
 (optionally) the `base` to use.
 
 ```julia
 julia> keysize = 2048
 julia> publickey, privatekey = generate_paillier_keypair(keysize)
-julia> encoding = Encoding(Float32, publickey)
+julia> encoding = Encoding{Float32}(publickey)
 julia> a = Float32(π)
 julia> b = 100
 julia> enc1 = encode_and_encrypt(a, encoding)
@@ -98,7 +98,7 @@ key, the encoding and the exponent.
 ```julia
 julia> publickey, privatekey = generate_paillier_keypair(2048)
 julia> a = [0.0, 1.2e3, 3.14, π]
-julia> encoding = Encoding(Float32, publickey)
+julia> encoding = Encoding{Float32}(publickey)
 julia> enca = encode_and_encrypt(a, encoding);
 julia> decrypt_and_decode(privatekey, enca)
 4-element Array{Float32,1}:
@@ -128,11 +128,12 @@ See [encryptedarray.jl](./src/encryptedarray.jl) for the implementation.
 
 ### Broadcasting Support
 
-I've made some effort towards supporting multidimensional arrays:
+`Paillier.jl` makes some effort towards supporting multidimensional arrays:
 
 ```julia
 julia> x = [[0, 1] [345, 32410] [3, 784564]]
 julia> publickey, privatekey = generate_paillier_keypair(4096)
+julia> encoding = Encoding{Float32}(publickey)
 julia> encrypted = encode_and_encrypt(x, encoding)
 julia> encrypted.public_key == publickey
 true
@@ -148,5 +149,17 @@ julia> decrypt_and_decode(privatekey, [4, 2] .* encrypted .+ 100)
  102.0  64920.0    1.56923e6
 ```
 
-However not everything works, e.g. the `LinearAlgebra.dot` function.
+Finally an example calling `dot` from LinearAlgebra between an encrypted
+and non encrypted matrix:
+
+```julia
+julia> using Paillier, LinearAlgebra
+julia> a = [[1,2] [2,3]]
+julia> b = [[1,2] [2,3]]
+julia> publickey, privatekey = generate_paillier_keypair(4096)
+julia> encoding = Encoding{Float32}(publickey)
+julia> ea = encode_and_encrypt(a, encoding)
+julia> decrypt_and_decode(privatekey, dot(ea, b))
+18.0f0
+```
 
