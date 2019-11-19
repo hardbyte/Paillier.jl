@@ -140,7 +140,7 @@ function run_psi(rng, a, b, keysize, datatype::DataType, exponent=0)
 
     publickey, privatekey = Paillier.generate_paillier_keypair(rng, keysize)
     encoding = Paillier.Encoding{datatype}(publickey, 16)
-    println("Running PSI with $(length(a)) x $(length(b)) of $(datatype))")
+    @debug("Running PSI with $(length(a)) x $(length(b)) of $(datatype))")
 
     client_input_set = Set{datatype}(a)
     server_input_set = Set{datatype}(b)

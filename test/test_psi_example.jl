@@ -44,7 +44,7 @@ end
                 run_psi(rng, a, b, keysize, Int64)
             end
         end
-        println("Tests for $keysize bit keysize took $(round(total; digits=2)) s")
+        @debug("Running PSI tests for $keysize bit keysize took $(round(total; digits=2)) s")
     end
 end
 
@@ -56,4 +56,7 @@ function bench(keysize=512, asize=1000, bsize=1000, repeats=10)
     println("Avg time $(asize)x$(bsize) for $keysize bit keysize took $(round(total/repeats; digits=2)) s")
 end
 
-bench(128, 500, 500)
+@testset "Benchmark Private Set Intersection" begin
+    bench(128, 500, 500)
+    bench(1024, 500, 500, 1)
+end
