@@ -1,15 +1,16 @@
 macro capture_stdout(ex)
-    return quote
-        local original_stdout = stdout
-        (read_pipe, write_pipe) = redirect_stdout()
-
-        local val = $(esc(ex))
-
-        redirect_stdout(original_stdout)
-        close(write_pipe)
-
-        val
-    end
+    ex
+#     return quote
+#         local original_stdout = stdout
+#         (read_pipe, write_pipe) = redirect_stdout()
+#
+#         local val = $(esc(ex))
+#
+#         redirect_stdout(original_stdout)
+#         close(write_pipe)
+#
+#         val
+#     end
 end
 
 @testset "Test encoded_numbers.jl example" begin
