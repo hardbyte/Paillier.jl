@@ -29,6 +29,7 @@ jobs:
         - julia --project test/runtests.jl
     - stage: "Test Examples"
       script:
+        - julia --project -e 'using Pkg; Pkg.instantiate()'
         - julia --project test/runexamples.jl
     - stage: "Documentation"
       script:
