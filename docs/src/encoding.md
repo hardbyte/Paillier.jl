@@ -45,7 +45,7 @@ Encoded
 EncryptedNumber
 ```
 
-## User Defined Decoding
+## User Defined Encoding
 
 Say you wanted to carry out Partially Homomorphic operations on values with uncertainty using
 the fantastic [Meaurements](https://github.com/JuliaPhysics/Measurements.jl) package.
@@ -92,3 +92,4 @@ enc3 = enc1 + enc2
 c = Paillier.decrypt_and_decode(privatekey, enc3)
 println("Adding encrypted numbers (with uncertainty): $c")
 ```
+

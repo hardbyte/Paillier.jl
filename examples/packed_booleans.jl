@@ -35,8 +35,8 @@ function Paillier.encode(scalars::PackableUInt16Type, encoding::Paillier.Encodin
     #Paillier.EncodedArray(encodings.plaintexts, encoding)
 
     # create a copy of the Encoded with our custom encoding type
-    # we use the public exponent to store the number of values.
-    # This shouldn't be necassary
+    # we abuse the encoding's public exponent value to store the length,
+    # Although this shouldn't be necassary.
     Paillier.Encoded(encoding, packed.value, length(scalars))
 end
 

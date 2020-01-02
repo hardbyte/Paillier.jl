@@ -266,7 +266,7 @@ zero(a::EncryptedNumber) = encode_and_encrypt(0, a.encoding, a.exponent)
 
 # Note we modify the encoded exponent in cleartext, not in the cipherspace.
 #+(a::EncryptedNumber, b::Number) = a + EncryptedNumber(encode(b, a.encoding, a.exponent), a.encoding.public_key)
-+(a::EncryptedNumber, b::Number) = a + encode_and_encrypt(b, a.encoding, a.exponent)
++(a::EncryptedNumber, b::T) where {T <: Number} = a + encode_and_encrypt(b, a.encoding, a.exponent)
 
 function +(a::EncryptedNumber, b::EncryptedNumber)
     if (a.encoding != b.encoding)

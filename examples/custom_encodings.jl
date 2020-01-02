@@ -1,6 +1,6 @@
 import Paillier
 using Measurements
-
+import Base.+
 """
 This example uses a custom Encoding to take a Measurement and encode it for encryption
 as two encrypted numbers (the value and the uncertainty).
@@ -30,6 +30,12 @@ function Paillier.decode(encoded::Paillier.EncodedArray, exponent::Int64, encodi
     )
 end
 
+"""
+Because we are end up with an array of encrypted numbers
+we may want to override some of the broadcast/array functionality
+"""
++(enc_a::Paillier.EncryptedArray, plaintext::Measurement) = enc_a + Paillier.encode(plaintext, enc_a.encoding)
+
 a = Measurement{Float16}(2000 ± 10)
 b = Measurement{Float16}(100 ± 1)
 
@@ -39,23 +45,28 @@ enc2 = Paillier.encode_and_encrypt(b, encoding)
 enc3 = enc1 + enc2
 
 c = Paillier.decrypt_and_decode(privatekey, enc3)
-println("Adding encrypted numbers (with uncertainty): $c")
+println("Adding encrypted Measurement numbers: D(E($a) + E($b)) = $c")
 
 # Dircetly use our previously defined encoding function
 encoded_b = Paillier.encode(b, enc3.encoding)
 d = Paillier.decrypt_and_decode(privatekey, enc3 + encoded_b)
-println("Adding encrypted number with encoded but unencrypted number (with uncertainty): $c + $b = $d")
+println("Adding encrypted number with encoded but unencrypted number (with uncertainty): D(E($c) + $b) = $d")
 
-# Issue due to encoding a single number as an EncryptedArray...
-# However broadcasting will add to both the value and the uncertainty
-e = Paillier.decrypt_and_decode(privatekey, enc3 .+ 5)
-println("Broadcast adding an encrypted number with an uncertain number: $c .+ 5 = $e")
+# Dircetly add a non encoded Measurement number
+d = Paillier.decrypt_and_decode(privatekey, enc3 + b)
+println("Adding encrypted number with Meaurement number: D(E$c) + $b) = $d")
 
 # Subtraction
 enc4 = Paillier.decrypt_and_decode(privatekey, enc3 - Paillier.encode_and_encrypt(a, enc3.encoding))
-println("Subtract a constant (with uncertainty) from an encrypted number: $c - $a = $enc4")
-println("Ideal (if we could propogate tags through the encryption): $c - $a = $(a+b-a)")
+println("Subtract a constant (with uncertainty) from an encrypted number: D(E($c) - $a) = $enc4")
 
-# TODO check against ideal. Can we override *(Encrypted, Encoding{Measurement}) to add uncertainty?
-#enc5 = Paillier.decrypt_and_decode(privatekey, 3*enc1)
-#println("Scaling an encrypted number: 3 * $a = $enc5")
+# Multiplication
+enc5 = Paillier.decrypt_and_decode(privatekey, 3*enc1)
+println("Scaling an encrypted Measurement number: 3 * $a = $enc5")
+
+# Issue due to encoding a single number as an EncryptedArray...
+# Due to broadcasting will add to both the value and the uncertainty
+# Would be better to throw an error.
+# e = Paillier.decrypt_and_decode(privatekey, enc3 .+ 5)
+# println("Broadcast adding an encrypted measurement number with number: D(E($c) .+ 5) = $e")
+
