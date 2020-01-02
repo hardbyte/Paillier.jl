@@ -30,6 +30,7 @@ jobs:
     - stage: "Test Examples"
       script:
         - julia --project -e 'using Pkg; Pkg.instantiate()'
+        - julia --project -e 'using Pkg; Pkg.add("Measurements")'
         - julia --project test/runexamples.jl
     - stage: "Documentation"
       script:
