@@ -39,10 +39,12 @@ julia> decrypt(priv, c)
 Note that addition between encrypted numbers, and multiplication of an encrypted
 number and a *plaintext* number works.
 
-The raw encrypted numbers above are **not** ready for sharing. Users must manually
-call `obfuscate` once all the mathematical operations have been completed.
+!!! note
 
- 
+    The raw encrypted numbers above are **not** ready for sharing. Users must manually
+    call `obfuscate` once all the mathematical operations have been completed.
+
+     
 ```@docs
 Paillier.obfuscate
 ```
@@ -57,12 +59,14 @@ julia> c.is_obfuscated
 true
 ```
 
-Attempting to encrypt a negative integer will result in a `DomainError`:
+!!! note
 
-```
-julia> encrypt(pub, -10)
-ERROR: DomainError with Can't encrypt negative integers without encoding:
-```
+    Attempting to encrypt a negative integer will result in a `DomainError`:
+    
+    ```
+    julia> encrypt(pub, -10)
+    ERROR: DomainError with Can't encrypt negative integers without encoding:
+    ```
 
 ## Floating point encoding
 
@@ -96,8 +100,10 @@ julia> decrypt_and_decode(privatekey, enc1 - 20.0)
 -16.858408f0
 ```
 
-There are still rough edges when working with higher precision datatypes
-such as `BigFloat`. For now I'd recommend encoding either `Float32` or `Float64`.  
+!!! note
+
+    There are still rough edges when working with higher precision datatypes
+    such as `BigFloat`. For now I'd recommend encoding either `Float32` or `Float64`.  
 
 ### User Defined Encoding
 
