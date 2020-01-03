@@ -38,5 +38,5 @@ function match_exponents(a, b)
     elseif a.exponent < b.exponent
         b = decrease_exponent_to(b, a.exponent)
     end
-    return a,b
+    return a, b
 end

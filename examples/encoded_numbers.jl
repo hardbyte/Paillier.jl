@@ -1,9 +1,5 @@
 import Paillier
 
-"""
-This example uses a custom Encoding.
-
-"""
 keysize = 2048
 base = 64
 

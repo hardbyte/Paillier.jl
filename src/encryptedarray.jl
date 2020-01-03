@@ -50,7 +50,8 @@ function EncryptedArray(xs::Array{EncryptedNumber})
         )
 end
 
-decrease_exponent_to(xs::EncryptedArray, exponent::Int64) = [decrease_exponent_to(x, exponent) for x in xs]
+decrease_exponent_to(xs::EncryptedArray, exponent::Int64) = EncryptedArray([decrease_exponent_to(x, exponent) for x in xs])
+
 
 function _normalize_exponent(encoded::Array{Encoded})
     # Used to enforce that a single exponent is shared by all elements in an EncryptedArray
@@ -165,7 +166,12 @@ function +(a::EncryptedArray, b::EncryptedArray)
     end
 
     # In order to add two EncryptedArrays, their exponents must match
-    a,b = match_exponents(a, b)
+    @info typeof(a)
+    @info typeof(b)
+
+    a, b = match_exponents(a, b)
+    @warn typeof(a)
+    @warn typeof(b)
 
     wrapped_add(c1::Ciphertext, c2::Ciphertext) = raw_add(a.public_key, c1, c2)
 
