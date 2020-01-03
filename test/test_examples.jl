@@ -19,8 +19,9 @@ end
 end
 
 @testset "Test custom_encodings.jl example" begin
+    using Measurements
     @capture_stdout include("../examples/custom_encodings.jl")
-    @test 6000.0 == enc5
+    @test 6000.0 ± 30.0 == enc5
 end
 
 @testset "Test private_set_intersection.jl example" begin
