@@ -7,6 +7,21 @@ Paillier.jl is divided into two layers: the core cryptosystem, and a higher leve
 layer which can deal with encoding floating point numbers and vectors of encrypted
 numbers.
 
+!!! note
+
+    Important notes on security.
+
+    We don't obfuscate the results of encrypted math operations by default. This is an
+    optimization copied from `python-paillier`, however after any homomorphic operation -
+    before sharing an `EncryptedNumber` or `EncryptedArray` you must call `obfuscate()`
+    to secure the ciphertext. Ideally this will occur behind the scenes at serialization
+    time, but this library does not help with serialization (yet).
+
+    Be warned that constant time functions have **not** been used, proceed with
+    extreme caution if your application could be susceptible to timing side
+    channel attacks.
+
+
 ## Installation
 
 `Paillier.jl` has been registered so install with Julia's package manager with:
