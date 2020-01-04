@@ -164,15 +164,8 @@ function +(a::EncryptedArray, b::EncryptedArray)
     if a.public_key != b.public_key
         throw(ArgumentError("Trying to add vectors encrypted with a different keypair."))
     end
-
     # In order to add two EncryptedArrays, their exponents must match
-    @info typeof(a)
-    @info typeof(b)
-
     a, b = match_exponents(a, b)
-    @warn typeof(a)
-    @warn typeof(b)
-
     wrapped_add(c1::Ciphertext, c2::Ciphertext) = raw_add(a.public_key, c1, c2)
 
     return EncryptedArray(

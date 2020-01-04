@@ -14,10 +14,10 @@ To begin you will need a keypair - a public and private Paillier key.
 Paillier.generate_paillier_keypair
 ```
 
- 
+
 ## Raw Paillier cryptosystem
 
-At the lowest level we can `encrypt` and `decrypt` (positive) integers using the 
+At the lowest level we can `encrypt` and `decrypt` (positive) integers using the
 *raw* paillier cryptosystem - that is with no encoding.
 
 ```jldoctest
@@ -44,7 +44,7 @@ number and a *plaintext* number works.
     The raw encrypted numbers above are **not** ready for sharing. Users must manually
     call `obfuscate` once all the mathematical operations have been completed.
 
-     
+
 ```@docs
 Paillier.obfuscate
 ```
@@ -62,7 +62,7 @@ true
 !!! note
 
     Attempting to encrypt a negative integer will result in a `DomainError`:
-    
+
     ```
     julia> encrypt(pub, -10)
     ERROR: DomainError with Can't encrypt negative integers without encoding:
@@ -70,7 +70,7 @@ true
 
 ## Floating point encoding
 
-To work with negative and floating point numbers we follow the encoding scheme of 
+To work with negative and floating point numbers we follow the encoding scheme of
 [python-paillier](https://python-paillier.readthedocs.io/en/develop/phe.html#phe.paillier.EncodedNumber).
 
 Create an `Encoding` for the type to *encode*.
@@ -107,15 +107,15 @@ julia> decrypt_and_decode(privatekey, enc1 - 20.0)
 
 ### User Defined Encoding
 
-See [encoding](./encoding) for an example creating a custom `Encoding` to take a 
+See [encoding](./encoding) for an example creating a custom `Encoding` to take a
 `Measurement` and encode it for encryption as an `EncryptedArray` containing both
 the value and the uncertainty in encrypted form.
 
 ## Array Support
 
-To avoid wasting space having multiple copies of the same `PublicKey` use the 
+To avoid wasting space having multiple copies of the same `PublicKey` use the
 `EncryptedArray` type that behaves like an array of `EncryptedNumber` objects, but only
-stores one copy of shared metadata such as the public 
+stores one copy of shared metadata such as the public
 key, the encoding and the exponent along with the underlying ciphertexts.
 
 ```@docs

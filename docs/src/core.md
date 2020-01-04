@@ -4,13 +4,6 @@ CurrentModule = Paillier
 
 # Core Cryptosystem
 
-
-## Types
-
-```@docs
-Encrypted
-```
-
 ## Methods
 
 ```@docs
@@ -29,3 +22,24 @@ encrypt_raw
 obfuscate
 ```
 
+
+```@docs
++(::T)
+```
+
+
+
+## Types
+
+```@docs
+
+PublicKey
+
+PrivateKey
+
+Encrypted
+
+
+Ciphertext
+
+```

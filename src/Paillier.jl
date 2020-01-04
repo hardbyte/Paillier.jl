@@ -1,14 +1,13 @@
 """
 # module Paillier
 
-# Examples
-
 ```jldoctest
 julia> pub, priv = generate_paillier_keypair(1024)
 julia> c = encrypt(pub, 10)
 julia> decrypt(priv, add(pub, c, encrypt(pub, 20)))
 30
 ```
+
 """
 module Paillier
 

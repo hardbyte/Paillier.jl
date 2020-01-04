@@ -19,7 +19,7 @@ end
     Ciphertext
 
 The raw encrypted information is always a `Ciphertext` which is
-simply an alias of BigInt.
+simply an alias of `BigInt`.
 """
 const Ciphertext = BigInt
 
@@ -31,7 +31,7 @@ Base.show(io::IO, pk::PublicKey) = print(io, "PublicKey(bits=$(Int64(ceil(log2(p
     Encrypted(ciphertext, public_key)
     Encrypted(ciphertext, public_key, is_obfuscated::Bool)
 
-An `Encrypted` is the `Paillier.jl` library's low level encrypted type. This simple
+An `Encrypted` is the `Paillier.jl` library's low level encrypted type. This
 object that includes the `ciphertext`, `public_key` and tracks whether obfuscation
 has occurred (assumed as `false` if not provided).
 """
@@ -42,9 +42,23 @@ struct Encrypted
 end
 Encrypted(ciphertext::Ciphertext, public_key::PublicKey) = Encrypted(ciphertext, public_key, false)
 
+"""
+    PublicKey(p, q)
+    PublicKey(n)
+
+A Paillier cryptosystem public key.
+ Create a keypair with [`generate_paillier_keypair`](@ref)
+"""
 PublicKey(p, q) = PublicKey(p * q)
 PublicKey(n::BigInt) = PublicKey(n, n^2, n + 1)
 
+
+"""
+    PrivateKey(public_key, p, q)
+    PrivateKey(public_key, p, q)
+
+A Paillier cryptosystem private key. Create a keypair with [`generate_paillier_keypair`](@ref).
+"""
 PrivateKey(public_key::PublicKey, p::BigInt, q::BigInt) = PrivateKey(public_key, p, q, public_key.n)
 function PrivateKey(public_key::PublicKey, p::BigInt, q::BigInt, n::BigInt)
     l = (p - 1) * (q - 1)
@@ -55,9 +69,14 @@ end
 """
     obfuscate(encrypted)
     obfuscate(rng, encrypted)
+    obfuscate(pub, ciphertext)
+    obfuscate(rng, pub, ciphertext)
 
-Salt the `Encrypted` with a new random number. Required before
+Salt the [`Encrypted`](@ref) with a new random number. Required before
 sharing ciphertexts with another party.
+
+Calling with a [`Ciphertext`](@ref) will return a new obfuscated `Ciphertext`,
+and calling with an [`Encrypted`])@ref will return a new `Encrypted`.
 """
 obfuscate(x::Encrypted) = x.is_obfuscated ? x : Encrypted(obfuscate(default_rng(), x.public_key, x.ciphertext), x.public_key, true)
 obfuscate(rng::AbstractRNG, x::Encrypted) = x.is_obfuscated ? x : Encrypted(obfuscate(x.public_key, x.ciphertext), x.public_key, true)
