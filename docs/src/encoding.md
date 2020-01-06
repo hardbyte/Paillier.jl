@@ -1,26 +1,36 @@
 ```@meta
 CurrentModule = Paillier
+
+DocTestSetup = quote
+    using Paillier
+    publickey, privatekey = generate_paillier_keypair(256)
+end
 ```
 
-# Encoding 
+# Encoding
 
 `Paillier.jl` allows encoding of Julia primitive numbers. The following example shows
 carrying out homomorphic operations on floating point numbers - in this case `Float32`.
 
 ```jldoctest
-julia> keysize = 2048
-julia> publickey, privatekey = generate_paillier_keypair(keysize)
-julia> encoding = Encoding{Float32}(publickey)
+julia> encoding = Encoding{Float32}(publickey);
+
 julia> a = Float32(π)
-julia> enc1 = encode_and_encrypt(a, encoding)
+3.1415927f0
+
+julia> enc1 = encode_and_encrypt(a, encoding);
+
 julia> decrypt_and_decode(privatekey, enc1)
 3.1415927f0
+
 julia> enc1.exponent
 -6
-julia> b = 100
-julia> enc2 = encode_and_encrypt(b, encoding)
+
+julia> enc2 = encode_and_encrypt(100, encoding);
+
 julia> decrypt_and_decode(privatekey, enc1 + enc2)
 103.141594f0
+
 julia> decrypt_and_decode(privatekey, enc1 - 20.0)
 -16.858408f0
 ```
@@ -34,6 +44,13 @@ Note the `enc1.exponent` is a public number which reveals size information about
 encode_and_encrypt
 
 decrypt_and_decode
+
+
+max_int
+
+encode
+
+decode
 ```
 
 ## Types
@@ -42,6 +59,8 @@ decrypt_and_decode
 Encoding
 
 Encoded
+
+EncodedArray
 
 EncryptedNumber
 ```
@@ -118,4 +137,3 @@ enc5 = Paillier.decrypt_and_decode(privatekey, 3*enc1)
 println("Scaling an encrypted Measurement number: 3 * $a = $enc5")
 
 ```
-

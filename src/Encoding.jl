@@ -10,15 +10,19 @@ export decrypt_and_decode, decrease_exponent_to
 
 A datatype for describing a fixed point encoding scheme for Julia DataTypes.
 
-The public key is included as the encoding is effected by the maximum representable
-integer which varies with the `public_key`.
+The public key is required as the maximum representable integer for an Encoding
+varies with the `public_key`.
 
-Setting a base value is optional - other Paillier implementations may use a  different
+Setting a base value is optional - other Paillier implementations may use a different
 base.
 
-# Examples
+To work with negative and floating point numbers we follow the encoding scheme of
+[python-paillier](https://python-paillier.readthedocs.io/en/develop/phe.html#phe.paillier.EncodedNumber).
 
-Specifying the optional base for encoding a Float64:
+# Example
+
+An encoding for `Float64` numbers specifying the optional base for encoding a Float64:
+
 
 ```
 julia> encoding = Encoding{Float64}(public_key, 64)
@@ -34,7 +38,8 @@ Encoding{T}(public_key::PublicKey) where T = Encoding{T}(public_key, 16)
 """
     max_int(::PublicKey)
 
-The maximum signed integer for our encoding system.
+The maximum signed integer for our encoding system based on the public key.
+
 We use a full third of the range for overflow detection.
 """
 max_int(public_key::PublicKey) = max_int(public_key.n)
@@ -42,7 +47,8 @@ max_int(n::BigInt) = (n-1)//3
 
 """
 A datatype for a **plaintext** encoded number.
-Returned by the `encode` methods.
+Returned by the raw [`encode`](@ref) methods, most users should instead use
+[`encode_and_encrypt`](@ref).
 
 Represents the Julia value as a `BigInt`.
 """
@@ -58,17 +64,27 @@ end
 
 Datatype for representing an Encrypted number with a known Encoding.
 
-# Examples
 
 ```@meta
-public_key, priv = generate_paillier_keypair(128)
-encoding = Encoding{Float32}(publickey)
+DocTestSetup = quote
+    using Paillier
+    publickey, privatekey = generate_paillier_keypair(256)
+    encoding = Encoding{Float64}(publickey, 64)
+end
 ```
 
+# Example
+
 ```jldoctest
-julia> encoded_number = encode(23.4, encoding)
-julia> EncryptedNumber(encoded_number, public_key)
+encoded_number = encode(23.4, encoding)
+encrypted_number = EncryptedNumber(encoded_number, publickey)
+decrypt_and_decode(privatekey, encrypted_number)
+
+# output
+
+23.4
 ```
+
 """
 struct EncryptedNumber
     encrypted::Encrypted
@@ -125,7 +141,7 @@ We multiply the *encoded* value by the `Encoding.base` and decrement the
 We can keep ratcheting down the [`EncryptedNumber`](@ref)'s exponent until the
 encoded integer overflows. **This overflow may not be caught**.
 
-There is also a (much faster) version that acts on [`EncodedNumber`](@ref)s.
+There is also a (much faster) version that acts on an [`Encoded`](@ref)s.
 """
 function decrease_exponent_to(enc::EncryptedNumber, new_exponent::Int64)::EncryptedNumber
     if new_exponent > enc.exponent

@@ -1,62 +1,66 @@
 # Usage
 
-After installing the package, you can start using it with
+After [Installation](@ref) of the package, you can start using it with:
 
 ```julia
 using Paillier
 ```
 
+
 ## Key Generation
 
 To begin you will need a keypair - a public and private Paillier key.
 
-```@docs
-Paillier.generate_paillier_keypair
+Generate a public and private key of default length using [`generate_paillier_keypair`](@ref):
+
+```@repl rawcrypto
+using Paillier
+publickey, privatekey = generate_paillier_keypair()
 ```
 
+```@meta
+DocTestSetup = quote
+    using Paillier
+    publickey, privatekey = generate_paillier_keypair(256)
+end
+```
 
 ## Raw Paillier cryptosystem
 
 At the lowest level we can `encrypt` and `decrypt` (positive) integers using the
-*raw* paillier cryptosystem - that is with no encoding.
+*raw* paillier cryptosystem without encoding. Addition between encrypted numbers,
+and multiplication of an encrypted number and a *plaintext* number works.
 
-```jldoctest
-julia> using Paillier
-julia> pub, priv = generate_paillier_keypair(1024)
-julia> a = encrypt(pub, 10)
-julia> b = encrypt(pub, 50)
-julia> decrypt(priv, a)
-10
-julia> decrypt(priv, a + 5)
-15
-julia> c = 2a + b;
-julia> typeof(c)
-Encrypted
-julia> decrypt(priv, c)
-70
+The `publickey` is used for encryption via [`encrypt`](@ref), and `privatekey`
+is required to [`decrypt`](@ref).
+
+
+```@repl rawcrypto
+a = encrypt(publickey, 10)
+b = encrypt(publickey, 50)
+decrypt(privatekey, a)
+decrypt(privatekey, a + 5)
+c = 2a + b
+decrypt(privatekey, c)
+c.is_obfuscated
 ```
 
-Note that addition between encrypted numbers, and multiplication of an encrypted
-number and a *plaintext* number works.
 
 !!! note
 
     The raw encrypted numbers above are **not** ready for sharing. Users must manually
-    call `obfuscate` once all the mathematical operations have been completed.
+    call [`obfuscate`](@ref). This is to allow any homomorphic
+    operations to be completed before running the expensive obfuscation code.
 
 
-```@docs
-Paillier.obfuscate
-```
 
-Always obfuscate before sharing an encrypted number:
+Always [`obfuscate`](@ref) before sharing an encrypted number:
 
-```julia
-julia> (2a + b).is_obfuscated
-false
-julia> c = obfuscate(2a + b)
-julia> c.is_obfuscated
-true
+```@repl rawcrypto
+(2a + b).is_obfuscated
+c = obfuscate(2a + b)
+c.is_obfuscated
+decrypt(privatekey, c)
 ```
 
 !!! note
@@ -73,31 +77,22 @@ true
 To work with negative and floating point numbers we follow the encoding scheme of
 [python-paillier](https://python-paillier.readthedocs.io/en/develop/phe.html#phe.paillier.EncodedNumber).
 
-Create an `Encoding` for the type to *encode*.
+Create an [`Encoding`](@ref) for the type to *encode*.
 
-```@docs
-Paillier.Encoding
-```
 
 ### Example encoding Float32 numbers
 
-```julia
-julia> keysize = 2048
-julia> publickey, privatekey = generate_paillier_keypair(keysize)
-julia> encoding = Encoding{Float32}(publickey)
-julia> a = Float32(π)
-julia> b = 100
-julia> enc1 = encode_and_encrypt(a, encoding)
-julia> decrypt_and_decode(privatekey, enc1)
-3.1415927f0
-julia> enc1.exponent
--6
-julia> enc2 = encode_and_encrypt(b, encoding)
-julia> enc3 = decrypt_and_decode(privatekey, enc1 + enc2)
-julia> enc3
-103.141594f0
-julia> decrypt_and_decode(privatekey, enc1 - 20.0)
--16.858408f0
+```@repl
+using Paillier
+publickey, privatekey = generate_paillier_keypair()
+encoding = Encoding{Float32}(publickey)
+a = Float32(π)
+enc1 = encode_and_encrypt(a, encoding)
+decrypt_and_decode(privatekey, enc1)
+enc1.exponent
+enc2 = encode_and_encrypt(100, encoding)
+decrypt_and_decode(privatekey, enc1 + enc2)
+decrypt_and_decode(privatekey, enc1 - 20.0)
 ```
 
 !!! note
@@ -107,7 +102,7 @@ julia> decrypt_and_decode(privatekey, enc1 - 20.0)
 
 ### User Defined Encoding
 
-See [encoding](./encoding) for an example creating a custom `Encoding` to take a
+See [encoding](./encoding.md) for an example creating a custom `Encoding` to take a
 `Measurement` and encode it for encryption as an `EncryptedArray` containing both
 the value and the uncertainty in encrypted form.
 

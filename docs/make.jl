@@ -3,6 +3,7 @@ using Paillier
 
 makedocs(
     sitename = "Paillier.jl",
+    authors = "Brian Thorne",
     format = Documenter.HTML(
         prettyurls = get(ENV, "CI", nothing) == "true"
     ),

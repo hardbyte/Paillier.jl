@@ -84,7 +84,7 @@ end
     encode_and_encrypt(xs::Array{<:Number}, encoding::Encoding)
     encode_and_encrypt(xs::Array{<:Number}, encoding::Encoding, exponent::Int64)
 
-Create an EncryptedArray of your plaintext numbers.
+Create an [`EncryptedArray`](@ref) of your plaintext numbers.
 """
 function encode_and_encrypt(plaintext::Array{<:Number}, encoding::Encoding, exponent::Int64)
     encoded = encode(plaintext, encoding, exponent)

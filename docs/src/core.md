@@ -2,29 +2,37 @@
 CurrentModule = Paillier
 ```
 
+
 # Core Cryptosystem
+
+```@docs
+Paillier
+```
 
 ## Methods
 
+
 ```@docs
+Paillier.generate_paillier_keypair
+
 encrypt
-```
 
-```@docs
 decrypt
-```
 
-```@docs
 encrypt_raw
-```
 
-```@docs
 obfuscate
+
+decrease_exponent_to
 ```
 
+### Homomorphic Operations
 
 ```@docs
-+(::T)
++(::Encrypted, ::Number)
+
+
+*(::Encrypted, ::Number)
 ```
 
 
@@ -38,7 +46,6 @@ PublicKey
 PrivateKey
 
 Encrypted
-
 
 Ciphertext
 

@@ -27,6 +27,7 @@ Base.show(io::IO, pk::PrivateKey) = print(io, "PrivateKey(hash=$(hash(pk.l) + ha
 Base.show(io::IO, pk::PublicKey) = print(io, "PublicKey(bits=$(Int64(ceil(log2(pk.n)))), hash=$(hash(pk.n)))")
 
 
+
 """
     Encrypted(ciphertext, public_key)
     Encrypted(ciphertext, public_key, is_obfuscated::Bool)
@@ -42,12 +43,14 @@ struct Encrypted
 end
 Encrypted(ciphertext::Ciphertext, public_key::PublicKey) = Encrypted(ciphertext, public_key, false)
 
+Base.show(io::IO, enc::Encrypted) = print(io, "Encrypted(bits=$(Int64(ceil(log2(enc.public_key.n)))), hash=$(hash((enc.public_key.n, enc.ciphertext))))")
+
 """
     PublicKey(p, q)
     PublicKey(n)
 
 A Paillier cryptosystem public key.
- Create a keypair with [`generate_paillier_keypair`](@ref)
+Create a keypair with [`generate_paillier_keypair`](@ref)
 """
 PublicKey(p, q) = PublicKey(p * q)
 PublicKey(n::BigInt) = PublicKey(n, n^2, n + 1)
@@ -90,8 +93,8 @@ end
 """
     encrypt_raw(public_key, message)
 
-Internal version of `encrypt` that returns the raw [`Ciphertext`](@ref) - which is just
-a `BigInt`. Note this includes **obfuscation** so
+Internal version of [`encrypt`](@ref) that returns the raw [`Ciphertext`](@ref)
+- which is just a `BigInt`. Note this includes **obfuscation** so
 a directly encrypted unsigned integer is safe to share.
 """
 function encrypt_raw(pub::PublicKey, m::Integer)::Ciphertext
@@ -126,9 +129,16 @@ The result is always a `BigInt`.
 
 # Examples
 
+```@meta
+DocTestSetup = quote
+    using Paillier
+    publickey, privatekey = generate_paillier_keypair(256)
+end
+```
+
 ```jldoctest
-julia> publickey, privatekey = generate_paillier_keypair(128);
 julia> ciphertext = encrypt(publickey, 10);
+
 julia> decrypt(privatekey, ciphertext)
 10
 
@@ -159,18 +169,24 @@ Homomorphic addition. Add an [`Encrypted`](@ref) to either a plaintext or anothe
 Note a plaintext number will be automatically encrypted and therefore must meet the same
 conditions outlined in [`encrypt`](@ref) - i.e. positive integers under `public_key.n`.
 
-# Examples
+# Example
+
+```@meta
+DocTestSetup = quote
+    using Paillier
+    publickey, privatekey = generate_paillier_keypair(256)
+end
+```
+
 ```jldoctest
-julia> publickey, privatekey = generate_paillier_keypair(128)
+c1 = encrypt(publickey, 10)
+c2 = encrypt(publickey, 1000);
+println(decrypt(privatekey, c1 + 90))
+println(decrypt(privatekey, c1 + c2))
 
-julia> c1 = encrypt(publickey, 10)
+# output
 
-julia> decrypt(privatekey, c1 + 90)
 100
-
-julia> c2 = encrypt(publickey, 1000)
-
-julia> decrypt(privatekey, c1 + c2)
 1010
 ```
 """
@@ -205,6 +221,24 @@ end
     *(::Encrypted, ::Integer)
 
 Homomorphic multiplication. Allows the multiplication of an Encrypted and cleartext integer.
+
+# Example
+
+```@meta
+DocTestSetup = quote
+    using Paillier
+    publickey, privatekey = generate_paillier_keypair(256)
+end
+```
+
+```jldoctest
+a = encrypt(publickey, 10)
+println(decrypt(privatekey, a * 10))
+
+# output
+
+100
+```
 """
 *(encrypted::Encrypted, plaintext::Number) = plaintext * encrypted
 function *(plaintext::Integer, encrypted::Encrypted)

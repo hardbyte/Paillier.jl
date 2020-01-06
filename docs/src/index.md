@@ -1,6 +1,10 @@
 # Paillier.jl
 
+A [Julia](https://julialang.org/) implementation of the
+[Paillier partially homomorphic crypto system](https://en.wikipedia.org/wiki/Paillier_cryptosystem).
+
 ```@contents
+Pages = ["usage.md", "core.md", "encoding.md"]
 ```
 
 Paillier.jl is divided into two layers: the core cryptosystem, and a higher level
