@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Usage · Paillier.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit">Paillier.jl</span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../core/">Core Cryptosystem</a></li><li><a class="tocitem" href="../encoding/">Encoding</a></li><li><a class="tocitem" href="../">Paillier.jl</a></li><li class="is-active"><a class="tocitem" href>Usage</a><ul class="internal"><li><a class="tocitem" href="#Key-Generation-1"><span>Key Generation</span></a></li><li><a class="tocitem" href="#Raw-Paillier-cryptosystem-1"><span>Raw Paillier cryptosystem</span></a></li><li><a class="tocitem" href="#Floating-point-encoding-1"><span>Floating point encoding</span></a></li><li><a class="tocitem" href="#Array-Support-1"><span>Array Support</span></a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Usage</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Usage</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/hardbyte/Paillier.jl/blob/master/docs/src/usage.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Usage-1"><a class="docs-heading-anchor" href="#Usage-1">Usage</a><a class="docs-heading-anchor-permalink" href="#Usage-1" title="Permalink"></a></h1><p>After <a href="../#Installation-1">Installation</a> of the package, you can start using it with:</p><pre><code class="language-julia">using Paillier</code></pre><h2 id="Key-Generation-1"><a class="docs-heading-anchor" href="#Key-Generation-1">Key Generation</a><a class="docs-heading-anchor-permalink" href="#Key-Generation-1" title="Permalink"></a></h2><p>To begin you will need a keypair - a public and private Paillier key.</p><p>Generate a public and private key of default length using <a href="../core/#Paillier.generate_paillier_keypair"><code>generate_paillier_keypair</code></a>:</p><pre><code class="language-julia-repl">julia&gt; using Paillier
+
+julia&gt; publickey, privatekey = generate_paillier_keypair()
+(PublicKey(bits=2048, hash=3741382907891525986), PrivateKey(hash=11170444788155874372))</code></pre><h2 id="Raw-Paillier-cryptosystem-1"><a class="docs-heading-anchor" href="#Raw-Paillier-cryptosystem-1">Raw Paillier cryptosystem</a><a class="docs-heading-anchor-permalink" href="#Raw-Paillier-cryptosystem-1" title="Permalink"></a></h2><p>At the lowest level we can <code>encrypt</code> and <code>decrypt</code> (positive) integers using the <em>raw</em> paillier cryptosystem without encoding. Addition between encrypted numbers, and multiplication of an encrypted number and a <em>plaintext</em> number works.</p><p>The <code>publickey</code> is used for encryption via <a href="../core/#Paillier.encrypt"><code>encrypt</code></a>, and <code>privatekey</code> is required to <a href="../core/#Paillier.decrypt"><code>decrypt</code></a>.</p><pre><code class="language-julia-repl">julia&gt; a = encrypt(publickey, 10)
+Encrypted(bits=2048, hash=13961824450705743531)
+
+julia&gt; b = encrypt(publickey, 50)
+Encrypted(bits=2048, hash=8005172718065013616)
+
+julia&gt; decrypt(privatekey, a)
+10
+
+julia&gt; decrypt(privatekey, a + 5)
+15
+
+julia&gt; c = 2a + b
+Encrypted(bits=2048, hash=5583617797717240726)
+
+julia&gt; decrypt(privatekey, c)
+70
+
+julia&gt; c.is_obfuscated
+false</code></pre><div class="admonition is-info"><header class="admonition-header">Note</header><div class="admonition-body"><p>The raw encrypted numbers above are <strong>not</strong> ready for sharing. Users must manually call <a href="../core/#Paillier.obfuscate"><code>obfuscate</code></a>. This is to allow any homomorphic operations to be completed before running the expensive obfuscation code.</p></div></div><p>Always <a href="../core/#Paillier.obfuscate"><code>obfuscate</code></a> before sharing an encrypted number:</p><pre><code class="language-julia-repl">julia&gt; (2a + b).is_obfuscated
+false
+
+julia&gt; c = obfuscate(2a + b)
+Encrypted(bits=2048, hash=2118976626424644975)
+
+julia&gt; c.is_obfuscated
+true
+
+julia&gt; decrypt(privatekey, c)
+70</code></pre><div class="admonition is-info"><header class="admonition-header">Note</header><div class="admonition-body"><p>Attempting to encrypt a negative integer will result in a <code>DomainError</code>:</p><pre><code class="language-none">julia&gt; encrypt(pub, -10)
+ERROR: DomainError with Can&#39;t encrypt negative integers without encoding:</code></pre></div></div><h2 id="Floating-point-encoding-1"><a class="docs-heading-anchor" href="#Floating-point-encoding-1">Floating point encoding</a><a class="docs-heading-anchor-permalink" href="#Floating-point-encoding-1" title="Permalink"></a></h2><p>To work with negative and floating point numbers we follow the encoding scheme of <a href="https://python-paillier.readthedocs.io/en/develop/phe.html#phe.paillier.EncodedNumber">python-paillier</a>.</p><p>Create an <a href="../encoding/#Paillier.Encoding"><code>Encoding</code></a> for the type to <em>encode</em>.</p><h3 id="Example-encoding-Float32-numbers-1"><a class="docs-heading-anchor" href="#Example-encoding-Float32-numbers-1">Example encoding Float32 numbers</a><a class="docs-heading-anchor-permalink" href="#Example-encoding-Float32-numbers-1" title="Permalink"></a></h3><pre><code class="language-julia-repl">julia&gt; using Paillier
+
+julia&gt; publickey, privatekey = generate_paillier_keypair()
+(PublicKey(bits=2048, hash=10344498335344342619), PrivateKey(hash=427233924611365815))
+
+julia&gt; encoding = Encoding{Float32}(publickey)
+Encoding{Float32}(PublicKey(bits=2048, hash=10344498335344342619), 16)
+
+julia&gt; a = Float32(π)
+3.1415927f0
+
+julia&gt; enc1 = encode_and_encrypt(a, encoding)
+EncryptedNumber(exponent=-6, hash=13892209476548274785)
+
+julia&gt; decrypt_and_decode(privatekey, enc1)
+3.1415927f0
+
+julia&gt; enc1.exponent
+-6
+
+julia&gt; enc2 = encode_and_encrypt(100, encoding)
+EncryptedNumber(exponent=0, hash=7071763699267170575)
+
+julia&gt; decrypt_and_decode(privatekey, enc1 + enc2)
+103.141594f0
+
+julia&gt; decrypt_and_decode(privatekey, enc1 - 20.0)
+-16.858408f0</code></pre><div class="admonition is-info"><header class="admonition-header">Note</header><div class="admonition-body"><p>There are still rough edges when working with higher precision datatypes such as <code>BigFloat</code>. For now I&#39;d recommend encoding either <code>Float32</code> or <code>Float64</code>.  </p></div></div><h3 id="User-Defined-Encoding-1"><a class="docs-heading-anchor" href="#User-Defined-Encoding-1">User Defined Encoding</a><a class="docs-heading-anchor-permalink" href="#User-Defined-Encoding-1" title="Permalink"></a></h3><p>See <a href="../encoding/">encoding</a> for an example creating a custom <code>Encoding</code> to take a <code>Measurement</code> and encode it for encryption as an <code>EncryptedArray</code> containing both the value and the uncertainty in encrypted form.</p><h2 id="Array-Support-1"><a class="docs-heading-anchor" href="#Array-Support-1">Array Support</a><a class="docs-heading-anchor-permalink" href="#Array-Support-1" title="Permalink"></a></h2><p>To avoid wasting space having multiple copies of the same <code>PublicKey</code> use the <code>EncryptedArray</code> type that behaves like an array of <code>EncryptedNumber</code> objects, but only stores one copy of shared metadata such as the public key, the encoding and the exponent along with the underlying ciphertexts.</p><article class="docstring"><header><a class="docstring-binding" id="Paillier.EncryptedArray" href="#Paillier.EncryptedArray"><code>Paillier.EncryptedArray</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia">EncryptedArray</code></pre><p>A vector version of <a href="../encoding/#Paillier.EncryptedNumber"><code>EncryptedNumber</code></a>.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/hardbyte/Paillier.jl/blob/f0090308ef2ccf966bef8e5100954fd6d9236a1a/src/encryptedarray.jl#L27-L31">source</a></section></article><h3 id="Paillier-operations-on-an-encrypted-vector-of-floats-1"><a class="docs-heading-anchor" href="#Paillier-operations-on-an-encrypted-vector-of-floats-1">Paillier operations on an encrypted vector of floats</a><a class="docs-heading-anchor-permalink" href="#Paillier-operations-on-an-encrypted-vector-of-floats-1" title="Permalink"></a></h3><pre><code class="language-julia">julia&gt; publickey, privatekey = generate_paillier_keypair(2048)
+julia&gt; a = [0.0, 1.2e3, 3.14, π]
+julia&gt; encoding = Encoding{Float32}(publickey)
+julia&gt; enca = encode_and_encrypt(a, encoding);
+julia&gt; decrypt_and_decode(privatekey, enca)
+4-element Array{Float32,1}:
+    0.0      
+ 1200.0      
+    3.1399999
+    3.1415927
+julia&gt; encb = 2 * enca;
+julia&gt; decrypt_and_decode(privatekey, encb)
+4-element Array{Float32,1}:
+    0.0      
+ 2400.0      
+    6.2799997
+    6.2831855
+julia&gt; decrypt_and_decode(privatekey, reduce(+, encb))
+2412.5632f0
+julia&gt; enca.is_obfuscated
+true
+julia&gt; encb.is_obfuscated
+false
+julia&gt; encb = obfuscate(encb);
+julia&gt; encb.is_obfuscated
+true</code></pre><h3 id="Broadcasting-1"><a class="docs-heading-anchor" href="#Broadcasting-1">Broadcasting</a><a class="docs-heading-anchor-permalink" href="#Broadcasting-1" title="Permalink"></a></h3><p><code>Paillier.jl</code> makes some effort towards supporting multidimensional arrays:</p><pre><code class="language-julia">julia&gt; x = [[0, 1] [345, 32410] [3, 784564]]
+julia&gt; publickey, privatekey = generate_paillier_keypair(4096)
+julia&gt; encoding = Encoding{Float32}(publickey)
+julia&gt; encrypted = encode_and_encrypt(x, encoding)
+julia&gt; encrypted.public_key == publickey
+true
+julia&gt; typeof(encrypted), size(encrypted)
+(EncryptedArray{BigInt,2}, (2, 3))
+julia&gt; decrypt_and_decode(privatekey, encrypted)
+2×3 Array{Float32,2}:
+ 0.0    345.0       3.0
+ 1.0  32410.0  784564.0
+julia&gt; decrypt_and_decode(privatekey, [4, 2] .* encrypted .+ 100)
+2×3 Array{Float32,2}:
+ 100.0   1480.0  112.0      
+ 102.0  64920.0    1.56923e6</code></pre><p>Finally an example calling <code>dot</code> from <code>LinearAlgebra</code> between an encrypted and non encrypted matrix:</p><pre><code class="language-julia">julia&gt; using Paillier, LinearAlgebra
+julia&gt; a = [[1,2] [2,3]]
+julia&gt; b = [[1,2] [2,3]]
+julia&gt; publickey, privatekey = generate_paillier_keypair(4096)
+julia&gt; encoding = Encoding{Float32}(publickey)
+julia&gt; ea = encode_and_encrypt(a, encoding)
+julia&gt; decrypt_and_decode(privatekey, dot(ea, b))
+18.0f0</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Paillier.jl</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Tuesday 7 January 2020 02:10">Tuesday 7 January 2020</span>. Using Julia version 1.0.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

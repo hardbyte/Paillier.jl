@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Encoding · Paillier.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit">Paillier.jl</span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../core/">Core Cryptosystem</a></li><li class="is-active"><a class="tocitem" href>Encoding</a><ul class="internal"><li><a class="tocitem" href="#API-1"><span>API</span></a></li><li><a class="tocitem" href="#Types-1"><span>Types</span></a></li><li><a class="tocitem" href="#User-Defined-Encoding-1"><span>User Defined Encoding</span></a></li></ul></li><li><a class="tocitem" href="../">Paillier.jl</a></li><li><a class="tocitem" href="../usage/">Usage</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Encoding</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Encoding</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/hardbyte/Paillier.jl/blob/master/docs/src/encoding.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Encoding-1"><a class="docs-heading-anchor" href="#Encoding-1">Encoding</a><a class="docs-heading-anchor-permalink" href="#Encoding-1" title="Permalink"></a></h1><p><code>Paillier.jl</code> allows encoding of Julia primitive numbers. The following example shows carrying out homomorphic operations on floating point numbers - in this case <code>Float32</code>.</p><pre><code class="language-julia-repl">julia&gt; encoding = Encoding{Float32}(publickey);
+
+julia&gt; a = Float32(π)
+3.1415927f0
+
+julia&gt; enc1 = encode_and_encrypt(a, encoding);
+
+julia&gt; decrypt_and_decode(privatekey, enc1)
+3.1415927f0
+
+julia&gt; enc1.exponent
+-6
+
+julia&gt; enc2 = encode_and_encrypt(100, encoding);
+
+julia&gt; decrypt_and_decode(privatekey, enc1 + enc2)
+103.141594f0
+
+julia&gt; decrypt_and_decode(privatekey, enc1 - 20.0)
+-16.858408f0</code></pre><p>Note the <code>enc1.exponent</code> is a public number which reveals size information about the encrypted value.</p><h2 id="API-1"><a class="docs-heading-anchor" href="#API-1">API</a><a class="docs-heading-anchor-permalink" href="#API-1" title="Permalink"></a></h2><article class="docstring"><header><a class="docstring-binding" id="Paillier.encode_and_encrypt" href="#Paillier.encode_and_encrypt"><code>Paillier.encode_and_encrypt</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">encode_and_encrypt(plaintext::Number, encoding::Encoding)
+encode_and_encrypt(plaintext::Number, encoding::Encoding, exponent::Int64)</code></pre><p>Encode the <code>plaintext</code> number using given <code>encoding</code> and encrypt using the <code>PublicKey</code> from the <code>encoding</code>.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/hardbyte/Paillier.jl/blob/f0090308ef2ccf966bef8e5100954fd6d9236a1a/src/Encoding.jl#L103-L109">source</a></section><section><div><pre><code class="language-none">encode_and_encrypt(xs::Array{&lt;:Number}, encoding::Encoding)
+encode_and_encrypt(xs::Array{&lt;:Number}, encoding::Encoding, exponent::Int64)</code></pre><p>Create an <a href="../usage/#Paillier.EncryptedArray"><code>EncryptedArray</code></a> of your plaintext numbers.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/hardbyte/Paillier.jl/blob/f0090308ef2ccf966bef8e5100954fd6d9236a1a/src/encryptedarray.jl#L83-L88">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Paillier.decrypt_and_decode" href="#Paillier.decrypt_and_decode"><code>Paillier.decrypt_and_decode</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">decrypt_and_decode(privatekey::PrivateKey, enc::EncryptedNumber)</code></pre><p>Decrypt an <code>EncryptedNumber</code> using the given <code>PrivateKey</code> and decode it using the <code>EncryptedNumber</code>&#39;s encoding.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/hardbyte/Paillier.jl/blob/f0090308ef2ccf966bef8e5100954fd6d9236a1a/src/Encoding.jl#L121-L126">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Paillier.max_int" href="#Paillier.max_int"><code>Paillier.max_int</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">max_int(::PublicKey)</code></pre><p>The maximum signed integer for our encoding system based on the public key.</p><p>We use a full third of the range for overflow detection.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/hardbyte/Paillier.jl/blob/f0090308ef2ccf966bef8e5100954fd6d9236a1a/src/Encoding.jl#L38-L44">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Paillier.encode" href="#Paillier.encode"><code>Paillier.encode</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">encode(::Number, ::Encoding)
+encode(::Number, ::Encoding, exponent::Int64)</code></pre><p>Encode a number <strong>but don&#39;t encrypt it</strong> for the given <code>Encoding</code> - producing an <code>Encoded</code>. See <a href="#Paillier.encode_and_encrypt"><code>encode_and_encrypt</code></a> for a method that also encrypts. If the exponent is not provided we attempt to match the precision of the passed julia type. See <a href="#Paillier.decode"><code>decode</code></a> to go the other direction.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/hardbyte/Paillier.jl/blob/f0090308ef2ccf966bef8e5100954fd6d9236a1a/src/Encoding.jl#L185-L193">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Paillier.decode" href="#Paillier.decode"><code>Paillier.decode</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">decode(encoded::Encoded)
+decode(encoded::BigInt, exponent::Int64, encoding::Encoding)</code></pre><p>The inverse of <a href="#Paillier.encode"><code>encode</code></a>, computes the decoding of the <code>Encoded</code> integer representation.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/hardbyte/Paillier.jl/blob/f0090308ef2ccf966bef8e5100954fd6d9236a1a/src/Encoding.jl#L245-L251">source</a></section></article><h2 id="Types-1"><a class="docs-heading-anchor" href="#Types-1">Types</a><a class="docs-heading-anchor-permalink" href="#Types-1" title="Permalink"></a></h2><article class="docstring"><header><a class="docstring-binding" id="Paillier.Encoding" href="#Paillier.Encoding"><code>Paillier.Encoding</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia">Encoding{::DataType}(::PublicKey)
+Encoding{::DataType,(::PublicKey, base::Int64)</code></pre><p>A datatype for describing a fixed point encoding scheme for Julia DataTypes.</p><p>The public key is required as the maximum representable integer for an Encoding varies with the <code>public_key</code>.</p><p>Setting a base value is optional - other Paillier implementations may use a different base.</p><p>To work with negative and floating point numbers we follow the encoding scheme of <a href="https://python-paillier.readthedocs.io/en/develop/phe.html#phe.paillier.EncodedNumber">python-paillier</a>.</p><p><strong>Example</strong></p><p>An encoding for <code>Float64</code> numbers specifying the optional base for encoding a Float64:</p><pre><code class="language-none">julia&gt; encoding = Encoding{Float64}(public_key, 64)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/hardbyte/Paillier.jl/blob/f0090308ef2ccf966bef8e5100954fd6d9236a1a/src/Encoding.jl#L7-L30">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Paillier.Encoded" href="#Paillier.Encoded"><code>Paillier.Encoded</code></a> — <span class="docstring-category">Type</span></header><section><div><p>A datatype for a <strong>plaintext</strong> encoded number. Returned by the raw <a href="#Paillier.encode"><code>encode</code></a> methods, most users should instead use <a href="#Paillier.encode_and_encrypt"><code>encode_and_encrypt</code></a>.</p><p>Represents the Julia value as a <code>BigInt</code>.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/hardbyte/Paillier.jl/blob/f0090308ef2ccf966bef8e5100954fd6d9236a1a/src/Encoding.jl#L48-L54">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Paillier.EncodedArray" href="#Paillier.EncodedArray"><code>Paillier.EncodedArray</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia">EncodedArray</code></pre><p>A vector version of <a href="#Paillier.Encoded"><code>Encoded</code></a></p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/hardbyte/Paillier.jl/blob/f0090308ef2ccf966bef8e5100954fd6d9236a1a/src/encryptedarray.jl#L11-L15">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Paillier.EncryptedNumber" href="#Paillier.EncryptedNumber"><code>Paillier.EncryptedNumber</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia">EncryptedNumber(::Encrypted, ::Encoding, exponent::Int64)
+EncryptedNumber(::Encoded, ::PublicKey)</code></pre><p>Datatype for representing an Encrypted number with a known Encoding.</p><pre><code class="language-">DocTestSetup = quote
+    using Paillier
+    publickey, privatekey = generate_paillier_keypair(256)
+    encoding = Encoding{Float64}(publickey, 64)
+end</code></pre><p><strong>Example</strong></p><pre><code class="language-julia">encoded_number = encode(23.4, encoding)
+encrypted_number = EncryptedNumber(encoded_number, publickey)
+decrypt_and_decode(privatekey, encrypted_number)
+
+# output
+
+23.4</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/hardbyte/Paillier.jl/blob/f0090308ef2ccf966bef8e5100954fd6d9236a1a/src/Encoding.jl#L61-L88">source</a></section></article><h2 id="User-Defined-Encoding-1"><a class="docs-heading-anchor" href="#User-Defined-Encoding-1">User Defined Encoding</a><a class="docs-heading-anchor-permalink" href="#User-Defined-Encoding-1" title="Permalink"></a></h2><p>Say you wanted to carry out Partially Homomorphic operations on values with uncertainty using the fantastic <a href="https://github.com/JuliaPhysics/Measurements.jl">Meaurements</a> package.</p><p>Do achieve this you need to define your <code>Encoding</code> type, and add methods to <code>encode</code> and <code>decode</code> the new <code>Encoding</code> type.</p><pre><code class="language-julia">import Paillier
+using Measurements
+
+keysize = 2048
+base = 64
+
+MyType = Measurement{Float16}
+publickey, privatekey = Paillier.generate_paillier_keypair(keysize)
+encoding = Paillier.Encoding{MyType}(publickey, base)
+
+# Support encoding any Measurement by encoding the value and error separately
+# This will create an EncodedArray
+function Paillier.encode(scalar::MyType, encoding::Paillier.Encoding{Measurement{T}}) where T
+    internal_encoding = Paillier.Encoding{T}(encoding.public_key, encoding.base)
+    encodings = Paillier.encode([scalar.val, scalar.err], internal_encoding)
+    # create a copy of the EncodedArray with our Measurement encoding type
+    Paillier.EncodedArray(encodings.plaintexts, encoding)
+end
+
+function Paillier.decode(encoded::Paillier.EncodedArray, exponent::Int64, encoding::Paillier.Encoding{Measurement{T}}) where T
+    internal_encoding = Paillier.Encoding{T}(encoding.public_key, encoding.base)
+    return measurement(
+        Paillier.decode(encoded.plaintexts[1].value, exponent, internal_encoding),
+        Paillier.decode(encoded.plaintexts[2].value, exponent, internal_encoding)
+    )
+end
+
+&quot;&quot;&quot;
+Because we are end up with an array of encrypted numbers
+we may want to override some of the broadcast/array functionality
+&quot;&quot;&quot;
++(enc_a::Paillier.EncryptedArray, plaintext::Measurement) = enc_a + Paillier.encode(plaintext, enc_a.encoding)
+
+
+a = Measurement{Float16}(2000 ± 10)
+b = Measurement{Float16}(100 ± 1)
+
+enc1 = Paillier.encode_and_encrypt(a, encoding)
+enc2 = Paillier.encode_and_encrypt(b, encoding)
+
+enc3 = enc1 + enc2
+
+c = Paillier.decrypt_and_decode(privatekey, enc3)
+println(&quot;Adding encrypted Measurement numbers: D(E($a) + E($b)) = $c&quot;)
+
+# Dircetly use our previously defined encoding function
+encoded_b = Paillier.encode(b, enc3.encoding)
+d = Paillier.decrypt_and_decode(privatekey, enc3 + encoded_b)
+println(&quot;Adding encrypted number with encoded but unencrypted number (with uncertainty): D(E($c) + $b) = $d&quot;)
+
+# Dircetly add a non encoded Measurement number
+d = Paillier.decrypt_and_decode(privatekey, enc3 + b)
+println(&quot;Adding encrypted number with Meaurement number: D(E$c) + $b) = $d&quot;)
+
+# Subtraction
+enc4 = Paillier.decrypt_and_decode(privatekey, enc3 - Paillier.encode_and_encrypt(a, enc3.encoding))
+println(&quot;Subtract a constant (with uncertainty) from an encrypted number: D(E($c) - $a) = $enc4&quot;)
+
+# Multiplication
+enc5 = Paillier.decrypt_and_decode(privatekey, 3*enc1)
+println(&quot;Scaling an encrypted Measurement number: 3 * $a = $enc5&quot;)
+</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../core/">« Core Cryptosystem</a><a class="docs-footer-nextpage" href="../">Paillier.jl »</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Tuesday 7 January 2020 02:10">Tuesday 7 January 2020</span>. Using Julia version 1.0.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
