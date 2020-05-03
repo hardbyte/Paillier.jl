@@ -4,10 +4,10 @@
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 
 [[BinaryProvider]]
-deps = ["Libdl", "SHA"]
-git-tree-sha1 = "5b08ed6036d9d3f0ee6369410b830f8873d4024c"
+deps = ["Libdl", "Logging", "SHA"]
+git-tree-sha1 = "428e9106b1ff27593cbd979afac9b45b82372b8c"
 uuid = "b99e7846-7c00-51b0-8f62-c81ae34c0232"
-version = "0.5.8"
+version = "0.5.9"
 
 [[Dates]]
 deps = ["Printf"]
@@ -60,9 +60,9 @@ version = "0.7.1"
 
 [[Polynomials]]
 deps = ["Intervals", "LinearAlgebra", "RecipesBase"]
-git-tree-sha1 = "19f1b9e3f27702309880b9ccb051287729af7db4"
+git-tree-sha1 = "8cc11cbb9dcb4d33a00d87bcab8e283d3a9409c7"
 uuid = "f27b6e38-b328-58d1-80ce-0feddd5e7a45"
-version = "0.8.0"
+version = "1.0.0"
 
 [[Primes]]
 deps = ["Test"]
@@ -79,9 +79,9 @@ deps = ["Serialization"]
 uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [[RecipesBase]]
-git-tree-sha1 = "d352369b00094cadb43d694333b051b3d55abaf2"
+git-tree-sha1 = "54f8ceb165a0f6d083f0d12cb4996f5367c6edbc"
 uuid = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
-version = "1.0.0"
+version = "1.0.1"
 
 [[SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
@@ -98,9 +98,9 @@ uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [[TimeZones]]
 deps = ["Dates", "EzXML", "Mocking", "Printf", "RecipesBase", "Serialization", "Unicode"]
-git-tree-sha1 = "0f070959511602e90ac4a8fa1799746c95cc3c19"
+git-tree-sha1 = "07af1bd3226d644ca1a3235c93e7d0207ce4536a"
 uuid = "f269a46b-ccf7-5d73-abea-4c690281aa53"
-version = "1.1.0"
+version = "1.1.1"
 
 [[Unicode]]
 uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
